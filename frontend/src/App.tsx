@@ -3,7 +3,7 @@ import { BriefForm } from './components/BriefBuilder/BriefForm';
 import { GenerationProgress } from './components/Dashboard/GenerationProgress';
 import { AssetGrid } from './components/Gallery/AssetGrid';
 import { CampaignBrief, ProgressEvent, GeneratedAsset } from './types';
-import { campaignApi, createWebSocket } from './services/api';
+import { campaignApi, createWebSocket, assetsApi } from './services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { Sparkles } from 'lucide-react';
 
@@ -12,6 +12,23 @@ function App() {
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [assets, setAssets] = useState<GeneratedAsset[]>([]);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
+
+  // Load all existing assets on mount
+  useEffect(() => {
+    const loadExistingAssets = async () => {
+      try {
+        const existingAssets = await assetsApi.listAllAssets();
+        setAssets(existingAssets);
+      } catch (error) {
+        console.error('Error loading existing assets:', error);
+      } finally {
+        setIsLoadingAssets(false);
+      }
+    };
+
+    loadExistingAssets();
+  }, []);
 
   useEffect(() => {
     if (!currentCampaignId) return;
@@ -59,7 +76,7 @@ function App() {
     try {
       setIsGenerating(true);
       setEvents([]);
-      setAssets([]);
+      // Don't clear assets - we want to keep existing ones visible
       setCurrentCampaignId(brief.campaignId);
 
       toast.loading('Starting campaign generation...', { id: 'generate' });
@@ -108,41 +125,10 @@ function App() {
         </div>
 
         {/* Asset Gallery - Full Width */}
-        {assets.length > 0 && (
-          <div className="mt-8">
-            <AssetGrid assets={assets} />
-          </div>
-        )}
-
-        {/* Info Section */}
-        {!isGenerating && assets.length === 0 && (
-          <div className="mt-12 text-center">
-            <div className="inline-block p-8 bg-white shadow rounded-lg">
-              <Sparkles className="mx-auto text-blue-600 mb-4" size={48} />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Welcome to Creative Boost
-              </h2>
-              <p className="text-gray-600 max-w-md">
-                Generate scalable social ad campaigns with AI. Fill out the campaign brief
-                above and click "Generate Campaign" to create assets for multiple products
-                and aspect ratios automatically.
-              </p>
-              <div className="mt-6 text-sm text-gray-500">
-                <p>✨ Powered by AWS Bedrock</p>
-                <p>📐 Generates 3 aspect ratios (1:1, 9:16, 16:9)</p>
-                <p>🎨 Automatic text overlay with campaign message</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-16 py-6 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-600">
-          <p>Creative Boost - Proof of Concept for FDE Take-Home Exercise</p>
+        <div className="mt-8">
+          <AssetGrid assets={assets} />
         </div>
-      </footer>
+      </main>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export class S3StorageService {
   constructor(region: string, bucket: string) {
     this.bucket = bucket;
     this.useLocal = !bucket || bucket === 'local';
-    this.localPath = process.env.STORAGE_PATH || './backend/output';
+    this.localPath = process.env.STORAGE_PATH || './output';
 
     if (this.useLocal) {
       logger.info(`Storage service initialized (LOCAL mode: ${this.localPath})`);

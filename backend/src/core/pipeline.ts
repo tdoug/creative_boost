@@ -45,7 +45,10 @@ export class CreativePipeline {
           } else {
             // Generate new image using cloud provider
             logger.info(`Generating new image for ${product.name} using ${this.cloudProvider.name.toUpperCase()}`);
-            const prompt = generateImagePrompt(brief, product.name, product.description);
+
+            // Try to include text in AI generation (works best with DALL-E 3, may be unreliable with Titan)
+            const useAIText = process.env.USE_AI_TEXT_RENDERING === 'true';
+            const prompt = generateImagePrompt(brief, product.name, product.description, useAIText);
             const negativePrompt = generateNegativePrompt();
 
             this.sendProgress({
@@ -59,7 +62,8 @@ export class CreativePipeline {
               prompt,
               negativePrompt,
               width: 1024,
-              height: 1024
+              height: 1024,
+              text: useAIText ? brief.message : undefined
             });
           }
 
@@ -79,11 +83,12 @@ export class CreativePipeline {
               // Resize to aspect ratio
               const resized = await resizeImage(baseImage, aspectRatio.width, aspectRatio.height);
 
-              // Add campaign message overlay
-              const final = await addTextOverlay(resized, {
+              // Add campaign message overlay with varied styling (skip if using AI text rendering)
+              const useAIText = process.env.USE_AI_TEXT_RENDERING === 'true';
+              const final = useAIText ? resized : await addTextOverlay(resized, {
                 text: brief.message,
-                fontSize: Math.floor(aspectRatio.width / 20),
-                position: 'bottom'
+                fontSize: Math.floor(aspectRatio.width / 20)
+                // position, background, and font will be randomly selected
               });
 
               // Save to storage

@@ -23,12 +23,13 @@ export class BedrockService {
 
       // Determine which model API format to use
       const isTitan = this.modelId.includes('titan');
+      const isNova = this.modelId.includes('nova');
       const isStableDiffusion = this.modelId.includes('stability');
 
       let body: string;
 
-      if (isTitan) {
-        // Amazon Titan Image Generator format
+      if (isTitan || isNova) {
+        // Amazon Titan and Nova Canvas use the same API format
         body = JSON.stringify({
           taskType: "TEXT_IMAGE",
           textToImageParams: {
@@ -37,7 +38,7 @@ export class BedrockService {
           },
           imageGenerationConfig: {
             numberOfImages: 1,
-            quality: "standard",
+            quality: isNova ? "premium" : "standard",
             height: options.height,
             width: options.width,
             cfgScale: 8.0,
@@ -80,10 +81,10 @@ export class BedrockService {
 
       let base64Image: string;
 
-      if (isTitan) {
-        // Titan returns images in a different structure
+      if (isTitan || isNova) {
+        // Titan and Nova return images in the same structure
         if (!responseBody.images || responseBody.images.length === 0) {
-          throw new Error('No images returned from Titan');
+          throw new Error(`No images returned from ${isNova ? 'Nova' : 'Titan'}`);
         }
         base64Image = responseBody.images[0];
       } else {

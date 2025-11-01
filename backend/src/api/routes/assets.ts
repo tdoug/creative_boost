@@ -8,6 +8,67 @@ const router = Router();
 const cloudProvider = createCloudProviderFromEnv();
 
 /**
+ * GET /api/assets
+ * List all assets across all campaigns
+ */
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    logger.info('Listing all assets');
+
+    // List all files in the storage
+    const allFiles = await cloudProvider.list('');
+
+    // Filter for image files and parse metadata
+    const assets = allFiles
+      .filter(file => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
+      .map(file => {
+        // Parse path: campaign-id/product-id/aspectRatio_timestamp.png
+        const parts = file.split('/');
+        if (parts.length >= 3) {
+          const campaignId = parts[0];
+          const productId = parts[1];
+          const filename = parts[2];
+
+          // Extract aspect ratio from filename (e.g., "1x1_123456.png" -> "1:1")
+          const aspectRatioMatch = filename.match(/^(\d+)x(\d+)_/);
+          const aspectRatio = aspectRatioMatch ? `${aspectRatioMatch[1]}:${aspectRatioMatch[2]}` : 'unknown';
+
+          // Get dimensions based on aspect ratio
+          const dimensions = aspectRatio === '1:1' ? { width: 1080, height: 1080 } :
+                           aspectRatio === '9:16' ? { width: 1080, height: 1920 } :
+                           aspectRatio === '16:9' ? { width: 1920, height: 1080 } :
+                           { width: 1080, height: 1080 };
+
+          // Format product name (e.g., "prod-1" -> "Product 1")
+          const productName = productId.replace('prod-', 'Product ');
+
+          return {
+            productId,
+            productName,
+            aspectRatio,
+            path: file,
+            metadata: {
+              generatedAt: new Date().toISOString(),
+              aspectRatio,
+              dimensions
+            }
+          };
+        }
+        return null;
+      })
+      .filter(asset => asset !== null);
+
+    res.json({ assets });
+  } catch (error) {
+    logger.error('Error listing all assets:', error);
+    res.status(500).json({
+      error: 'Failed to list assets',
+      details: String(error)
+    });
+  }
+});
+
+/**
  * GET /api/assets/:campaignId
  * List all assets for a campaign
  */
@@ -49,7 +110,7 @@ router.get('/file/*', async (req: Request, res: Response) => {
     }
 
     // For local storage, serve directly from disk for better performance
-    const storagePath = process.env.STORAGE_PATH || './backend/output';
+    const storagePath = process.env.STORAGE_PATH || './output';
     if (process.env.AWS_S3_BUCKET === 'local' ||
         process.env.AZURE_STORAGE_CONTAINER === 'local' ||
         process.env.GCP_BUCKET === 'local') {

@@ -85,6 +85,7 @@ export interface ImageGenerationOptions {
   width: number;
   height: number;
   negativePrompt?: string;
+  text?: string; // Text to render in the image (for models that support it)
 }
 
 export interface TextOverlayOptions {

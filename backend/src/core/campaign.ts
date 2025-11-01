@@ -51,11 +51,33 @@ export function validateCampaignBrief(brief: any): CampaignBrief {
 export function generateImagePrompt(
   brief: CampaignBrief,
   productName: string,
-  productDescription: string
+  productDescription: string,
+  includeText: boolean = false
 ): string {
-  const prompt = `Professional product photography of ${productName}. ${productDescription}.
-High quality commercial image for ${brief.targetRegion} market, targeting ${brief.targetAudience}.
-Clean background, well-lit, studio quality, photorealistic, detailed, sharp focus, 8k resolution.`;
+  // Concise professional advertisement prompt (max 512 chars for Amazon Titan)
+  const maxLength = 512;
+
+  // Build prompt with quality keywords
+  let prompt = `Award-winning premium advertisement photography, luxury commercial editorial. Professional product: ${productName}. ${productDescription}. Clean studio background, impeccable lighting, photorealistic, ultra-sharp, 8k, professional grading, cinematic, premium showcase.`;
+
+  // Add text requirement if requested (for AI models that support text rendering)
+  if (includeText && brief.message) {
+    prompt = `${prompt} Include bold Helvetica text overlay at bottom saying: "${brief.message}"`;
+  }
+
+  // Truncate if needed while preserving quality keywords
+  if (prompt.length > maxLength) {
+    const prefix = `Premium advertisement photography. Professional product: ${productName}. ${productDescription}`;
+    const textPart = includeText && brief.message ? `. Bold text: "${brief.message}"` : '';
+    const suffix = `${textPart}. Studio lighting, photorealistic, 8k, cinematic.`;
+    const availableLength = maxLength - suffix.length;
+
+    if (prefix.length > availableLength) {
+      prompt = prefix.substring(0, availableLength) + suffix;
+    } else {
+      prompt = prefix + suffix;
+    }
+  }
 
   return prompt.trim();
 }
@@ -64,5 +86,5 @@ Clean background, well-lit, studio quality, photorealistic, detailed, sharp focu
  * Generate negative prompt for better image quality
  */
 export function generateNegativePrompt(): string {
-  return 'blurry, low quality, distorted, deformed, ugly, bad anatomy, watermark, text, signature, amateur';
+  return 'blurry, low quality, distorted, deformed, ugly, bad anatomy, watermark, amateur, unprofessional, poor lighting, oversaturated, undersaturated, grainy, pixelated, artifacts, cluttered, messy background, low resolution, poor composition, cheap-looking, stock photo aesthetic';
 }

@@ -32,8 +32,15 @@ export const assetsApi = {
     return response.data.assets;
   },
 
+  async listAllAssets(): Promise<GeneratedAsset[]> {
+    const response = await api.get('/api/assets');
+    return response.data.assets;
+  },
+
   getAssetUrl(assetPath: string): string {
-    return `${API_BASE_URL}/api/assets/file/${encodeURIComponent(assetPath)}`;
+    // Encode each path segment separately to preserve slashes
+    const segments = assetPath.split('/').map(segment => encodeURIComponent(segment));
+    return `${API_BASE_URL}/api/assets/file/${segments.join('/')}`;
   }
 };
 
