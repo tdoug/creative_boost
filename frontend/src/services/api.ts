@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { CampaignBrief, GeneratedAsset } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +11,7 @@ export const api = axios.create({
 });
 
 export const campaignApi = {
-  async generateCampaign(brief: CampaignBrief): Promise<{ campaignId: string }> {
+  async generateCampaign(brief: CampaignBrief): Promise<{ campaignId: string; logoPath?: string }> {
     // Check if there's a logo file to upload
     const hasLogoFile = brief.brandAssets?.logo instanceof File;
 

@@ -112,7 +112,21 @@ function App() {
 
       toast.loading(t('toast.generationStarted'), { id: 'generate' });
 
-      await campaignApi.generateCampaign(brief);
+      const response = await campaignApi.generateCampaign(brief);
+
+      // If logo was uploaded, update the brief with the logo path
+      if (response.logoPath && brief.brandAssets) {
+        const updatedBrief = {
+          ...brief,
+          brandAssets: {
+            ...brief.brandAssets,
+            logo: response.logoPath
+          }
+        };
+        setCurrentBrief(updatedBrief);
+        // Trigger reload in BriefForm to update logo preview
+        setLoadedBrief(updatedBrief);
+      }
 
       toast.success(t('toast.generationStarted'), { id: 'generate' });
     } catch (error) {

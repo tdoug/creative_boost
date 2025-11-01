@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Info, Copy, Check, Sparkles, ChevronDown, ChevronRight, Upload, X } from 'lucide-react';
 import { CampaignBrief, Product, BrandAssets } from '../../types';
 import toast from 'react-hot-toast';
-import { campaignApi } from '../../services/api';
+import { campaignApi, API_BASE_URL } from '../../services/api';
 
 interface BriefFormProps {
   onSubmit: (brief: CampaignBrief) => void;
@@ -22,6 +22,7 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
   const [aiPromptAssist, setAiPromptAssist] = useState(false);
   const [generateAnalytics, setGenerateAnalytics] = useState(false);
   const [showAnalyticsCode, setShowAnalyticsCode] = useState(false);
+  const [showBrandAssets, setShowBrandAssets] = useState(false);
   const [useArtStyle, setUseArtStyle] = useState(false);
   const [artStyle, setArtStyle] = useState('photorealistic');
   const [copied, setCopied] = useState(false);
@@ -68,9 +69,20 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
       setArtStyle(loadedBrief.artStyle || 'photorealistic');
       setBrandAssets(loadedBrief.brandAssets || {});
 
-      // Handle logo preview if it's a string URL
+      // Auto-expand Brand Assets section if brand assets exist
+      if (loadedBrief.brandAssets?.logo || loadedBrief.brandAssets?.primaryColor || loadedBrief.brandAssets?.secondaryColor) {
+        setShowBrandAssets(true);
+      }
+
+      // Handle logo preview if it's a string path
       if (loadedBrief.brandAssets?.logo && typeof loadedBrief.brandAssets.logo === 'string') {
-        setLogoPreview(loadedBrief.brandAssets.logo);
+        // If it's a relative path, construct the full URL
+        const logoPath = loadedBrief.brandAssets.logo;
+        if (logoPath.startsWith('logos/')) {
+          setLogoPreview(`${API_BASE_URL}/api/assets/file/${logoPath}`);
+        } else {
+          setLogoPreview(logoPath);
+        }
       }
 
       toast.success(t('toast.campaignLoaded'));
@@ -316,83 +328,164 @@ ${hotjarTrackingCode}`;
             />
           </div>
 
-          {/* Brand Assets */}
+          {/* Brand Assets - Collapsible */}
           <div className="pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-gray-900">{t('brief.brandAssets')}</h3>
-              <div className="relative group">
-                <Info size={16} className="text-gray-400 cursor-help" />
-                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                  {t('brief.brandAssetsDesc')}
-                </div>
-              </div>
-            </div>
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowBrandAssets(!showBrandAssets)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-sm font-medium text-gray-700">{t('brief.brandAssets')}</span>
+                {showBrandAssets ? (
+                  <ChevronDown size={20} className="text-gray-500" />
+                ) : (
+                  <ChevronRight size={20} className="text-gray-500" />
+                )}
+              </button>
 
-            {/* Logo Upload */}
-            <div className="mb-3">
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Brand Logo {t('brief.optional')}
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setBrandAssets(prev => ({ ...prev, logo: file }));
-                  }
-                }}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {brandAssets.logo && (
-                <p className="mt-1 text-xs text-gray-500">
-                  {brandAssets.logo instanceof File ? brandAssets.logo.name : 'Logo uploaded'}
-                </p>
+              {showBrandAssets && (
+                <div className="p-4 bg-white border-t border-gray-200">
+                  {/* Brand Assets Description */}
+                  <div className="mb-4 flex items-start gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <Info size={16} className="text-gray-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-gray-700">
+                      {t('brief.brandAssetsDesc')}
+                    </p>
+                  </div>
+
+                  {/* Logo Upload */}
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Brand Logo {t('brief.optional')}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setBrandAssets(prev => ({ ...prev, logo: file }));
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {brandAssets.logo && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {brandAssets.logo instanceof File
+                          ? brandAssets.logo.name
+                          : typeof brandAssets.logo === 'string'
+                            ? brandAssets.logo.split('/').pop() || 'Logo uploaded'
+                            : 'Logo uploaded'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Brand Colors */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        {t('brief.primaryColor')} {t('brief.optional')}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={brandAssets.primaryColor || '#FFD700'}
+                          onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                          className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={brandAssets.primaryColor || ''}
+                          onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                          placeholder="#FFD700"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        {t('brief.secondaryColor')} {t('brief.optional')}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={brandAssets.secondaryColor || '#0066CC'}
+                          onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                          className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={brandAssets.secondaryColor || ''}
+                          onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                          placeholder="#0066CC"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Brand Color Note */}
+                  <div className="mt-3 flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Info size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-800">
+                      <strong>Note:</strong> Brand colors are more likely to appear prominently in non-photorealistic art styles (e.g., minimalist, watercolor, playful). For photorealistic styles, colors may be subtly incorporated into the scene.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
+          </div>
 
-            {/* Brand Colors */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
-                  {t('brief.primaryColor')} {t('brief.optional')}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={brandAssets.primaryColor || '#FFD700'}
-                    onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+          {/* Analytics Tracking Code - Collapsible */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowAnalyticsCode(!showAnalyticsCode)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-sm font-medium text-gray-700">{t('brief.analyticsTrackingCodeHeader')}</span>
+                {showAnalyticsCode ? (
+                  <ChevronDown size={20} className="text-gray-500" />
+                ) : (
+                  <ChevronRight size={20} className="text-gray-500" />
+                )}
+              </button>
+
+              {showAnalyticsCode && (
+                <div className="p-4 bg-white border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t('brief.analyticsTracking')}</h4>
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                    >
+                      {copied ? (
+                        <>
+                          <Check size={14} />
+                          {t('brief.copied')}
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          {t('brief.copyCode')}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={combinedTrackingCode}
+                    className="w-full h-48 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
+                    onClick={(e) => e.currentTarget.select()}
                   />
-                  <input
-                    type="text"
-                    value={brandAssets.primaryColor || ''}
-                    onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                    placeholder="#FFD700"
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <p className="mt-2 text-xs text-gray-600">
+                    {t('brief.pasteInHead')} <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> {t('brief.section')}
+                  </p>
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
-                  {t('brief.secondaryColor')} {t('brief.optional')}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={brandAssets.secondaryColor || '#0066CC'}
-                    onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={brandAssets.secondaryColor || ''}
-                    onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                    placeholder="#0066CC"
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -491,56 +584,6 @@ ${hotjarTrackingCode}`;
                       </option>
                     ))}
                   </select>
-                </div>
-              )}
-            </div>
-
-            {/* Analytics Tracking Code - Collapsible */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowAnalyticsCode(!showAnalyticsCode)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <span className="text-sm font-medium text-gray-700">{t('brief.analyticsTrackingCodeHeader')}</span>
-                {showAnalyticsCode ? (
-                  <ChevronDown size={20} className="text-gray-500" />
-                ) : (
-                  <ChevronRight size={20} className="text-gray-500" />
-                )}
-              </button>
-
-              {showAnalyticsCode && (
-                <div className="p-4 bg-white border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-sm font-semibold text-gray-700">{t('brief.analyticsTracking')}</h4>
-                    <button
-                      type="button"
-                      onClick={copyToClipboard}
-                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                    >
-                      {copied ? (
-                        <>
-                          <Check size={14} />
-                          {t('brief.copied')}
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={14} />
-                          {t('brief.copyCode')}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <textarea
-                    readOnly
-                    value={combinedTrackingCode}
-                    className="w-full h-48 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
-                    onClick={(e) => e.currentTarget.select()}
-                  />
-                  <p className="mt-2 text-xs text-gray-600">
-                    {t('brief.pasteInHead')} <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> {t('brief.section')}
-                  </p>
                 </div>
               )}
             </div>

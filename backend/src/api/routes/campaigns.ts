@@ -140,10 +140,17 @@ router.post('/generate', upload.single('logo'), async (req: Request, res: Respon
     });
 
     // Return immediately with accepted status
-    res.status(202).json({
+    const response: any = {
       message: 'Campaign generation started',
       campaignId: brief.campaignId
-    });
+    };
+
+    // If logo was uploaded, include the path where it will be stored
+    if (req.file) {
+      response.logoPath = `logos/${brief.campaignId}-logo.png`;
+    }
+
+    res.status(202).json(response);
   } catch (error) {
     logger.error('Error starting campaign generation:', error);
     res.status(400).json({
