@@ -9,6 +9,7 @@ import { CampaignBrief, ProgressEvent, GeneratedAsset } from './types';
 import { campaignApi, createWebSocket, assetsApi } from './services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { Sparkles, ArrowDown } from 'lucide-react';
+import { checkProhibitedWords } from './utils/contentCheck';
 
 function App() {
   const { t } = useTranslation();
@@ -90,6 +91,17 @@ function App() {
   }, [currentCampaignId]);
 
   const handleGenerateCampaign = async (brief: CampaignBrief) => {
+    // Check for prohibited words in the campaign message
+    const contentCheck = checkProhibitedWords(brief.message);
+    if (!contentCheck.isValid) {
+      const wordList = contentCheck.prohibitedWordsFound.join(', ');
+      toast.error(
+        `Campaign blocked: Prohibited word(s) detected: "${wordList}". Please remove them or update settings.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
     try {
       setIsGenerating(true);
       setCurrentCampaignId(brief.campaignId);

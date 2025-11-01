@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Upload, Download, Trash2, FileText, Copy, Save } from 'lucide-react';
+import { Menu, X, Upload, Download, Trash2, FileText, Copy, Save, Settings } from 'lucide-react';
 import { CampaignBrief } from '../../types';
 import toast from 'react-hot-toast';
+import SettingsModal from '../Settings/SettingsModal';
 
 interface HamburgerMenuProps {
   currentBrief: CampaignBrief | null;
@@ -14,6 +15,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
   const [isOpen, setIsOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSavedCampaigns, setShowSavedCampaigns] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -246,9 +248,27 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               <FileText size={20} />
               <span>{t('menu.savedCampaigns')} ({savedCampaigns.length})</span>
             </button>
+
+            {/* Settings */}
+            <button
+              onClick={() => {
+                setShowSettings(true);
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <Settings size={20} />
+              <span>Settings</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
 
       {/* Import Modal */}
       {showImportModal && (
