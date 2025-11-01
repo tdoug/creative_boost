@@ -320,6 +320,15 @@ npm run dev:backend
 
 # Frontend only
 npm run dev:frontend
+
+# Testing
+npm test                  # Run all tests (backend + frontend)
+npm run test:backend      # Run backend tests (Jest)
+npm run test:frontend     # Run frontend tests (Vitest)
+npm run test:watch        # Run tests in watch mode
+
+# Frontend test UI (optional)
+cd frontend && npm run test:ui
 ```
 
 ## API Endpoints
