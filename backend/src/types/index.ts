@@ -15,6 +15,8 @@ export const CampaignBriefSchema = z.object({
   targetAudience: z.string(),
   message: z.string(),
   locale: z.string().optional(),
+  useArtStyle: z.boolean().optional(),
+  artStyle: z.string().optional(),
   brandGuidelines: z.object({
     logoRequired: z.boolean().optional(),
     brandColors: z.array(z.string()).optional(),
@@ -108,4 +110,5 @@ export interface ProgressEvent {
   asset?: GeneratedAsset;
   error?: string;
   completed?: boolean; // For progress events, indicates if the task is done
+  prompt?: string; // The prompt used for image generation (if modified from default)
 }

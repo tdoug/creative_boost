@@ -22,12 +22,7 @@ export class CreativePipeline {
     const assets: GeneratedAsset[] = [];
     const errors: Array<{ productId: string; aspectRatio: string; error: string }> = [];
 
-    logger.info(`Starting pipeline execution for campaign: ${brief.campaignId}`);
-    this.sendProgress({
-      type: 'start',
-      campaignId: brief.campaignId,
-      message: `Starting campaign generation for ${brief.products.length} products`
-    });
+    logger.info(`Starting pipeline execution for campaign: ${brief.campaignId}`);    
 
     try {
       // Process each product
@@ -51,11 +46,14 @@ export class CreativePipeline {
             const prompt = generateImagePrompt(brief, product.name, product.description, useAIText);
             const negativePrompt = generateNegativePrompt();
 
+            logger.info(`Image generation prompt for ${product.name}: "${prompt}"`);
+
             this.sendProgress({
               type: 'progress',
               campaignId: brief.campaignId,
               productId: product.id,
-              message: `Generating image for ${product.name}...`
+              message: `Generating image for ${product.name}...`,
+              prompt: brief.useArtStyle ? prompt : undefined
             });
 
             baseImage = await this.cloudProvider.generateImage({

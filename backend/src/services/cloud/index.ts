@@ -77,7 +77,7 @@ export function createCloudProviderFromEnv(): CloudProvider {
     provider,
     region,
     aws: provider === 'aws' ? {
-      bedrockModelId: process.env.BEDROCK_MODEL_ID || 'amazon.titan-image-generator-v2:0',
+      bedrockModelId: process.env.BEDROCK_MODEL_ID || 'amazon.nova-canvas-v1:0',
       bedrockLlmModelId: process.env.BEDROCK_LLM_MODEL_ID || 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
       s3Bucket: process.env.AWS_S3_BUCKET || 'local'
     } : undefined,

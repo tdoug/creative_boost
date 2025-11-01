@@ -46,6 +46,31 @@ export function validateCampaignBrief(brief: any): CampaignBrief {
 }
 
 /**
+ * Get style-specific prompt modifiers
+ */
+function getStyleModifiers(style: string): string {
+  const styleMap: { [key: string]: string } = {
+    'photorealistic': 'photorealistic, ultra-sharp, 8k, professional photography',
+    'minimalist': 'minimalist design, clean lines, simple composition, negative space, modern aesthetic',
+    'vintage': 'vintage style, retro aesthetic, aged look, nostalgic atmosphere, film grain',
+    'modern': 'modern contemporary design, sleek, clean, sophisticated aesthetic',
+    'luxury': 'luxury high-end aesthetic, premium materials, elegant, sophisticated, polished',
+    'playful': 'playful cartoon style, bright colors, fun whimsical aesthetic, illustrated',
+    'watercolor': 'watercolor painting style, soft flowing colors, artistic brushstrokes, painted texture',
+    'oil-painting': 'oil painting style, rich colors, visible brushstrokes, classic art aesthetic',
+    'sketch': 'hand-drawn sketch style, pencil drawing, artistic linework, illustration',
+    'neon': 'neon cyberpunk aesthetic, glowing lights, futuristic, vibrant electric colors',
+    'pastel': 'soft pastel colors, gentle tones, dreamy aesthetic, light and airy',
+    'bold-graphic': 'bold graphic design, strong shapes, high contrast, vector style',
+    'retro': 'retro 80s style, synthwave aesthetic, vintage futuristic, nostalgic',
+    'art-deco': 'art deco style, geometric patterns, elegant 1920s aesthetic, ornate details',
+    'pop-art': 'pop art style, bold colors, comic book aesthetic, Andy Warhol inspired'
+  };
+
+  return styleMap[style] || 'photorealistic, professional photography';
+}
+
+/**
  * Generate a prompt for image generation based on campaign brief
  */
 export function generateImagePrompt(
@@ -57,8 +82,13 @@ export function generateImagePrompt(
   // Concise professional advertisement prompt (max 512 chars for Amazon Titan)
   const maxLength = 512;
 
-  // Build prompt with quality keywords
-  let prompt = `Award-winning premium advertisement photography, luxury commercial editorial. Professional product: ${productName}. ${productDescription}. Clean studio background, impeccable lighting, photorealistic, ultra-sharp, 8k, professional grading, cinematic, premium showcase.`;
+  // Get style modifiers if art style is enabled
+  const styleModifiers = (brief.useArtStyle && brief.artStyle)
+    ? getStyleModifiers(brief.artStyle)
+    : 'photorealistic, ultra-sharp, 8k, professional grading';
+
+  // Build prompt with quality keywords and style
+  let prompt = `Award-winning premium advertisement, luxury commercial editorial. Professional product: ${productName}. ${productDescription}. Clean studio background, impeccable lighting, ${styleModifiers}, cinematic, premium showcase.`;
 
   // Add text requirement if requested (for AI models that support text rendering)
   if (includeText && brief.message) {
@@ -67,9 +97,9 @@ export function generateImagePrompt(
 
   // Truncate if needed while preserving quality keywords
   if (prompt.length > maxLength) {
-    const prefix = `Premium advertisement photography. Professional product: ${productName}. ${productDescription}`;
+    const prefix = `Premium advertisement. Professional product: ${productName}. ${productDescription}`;
     const textPart = includeText && brief.message ? `. Bold text: "${brief.message}"` : '';
-    const suffix = `${textPart}. Studio lighting, photorealistic, 8k, cinematic.`;
+    const suffix = `${textPart}. Studio lighting, ${styleModifiers}, cinematic.`;
     const availableLength = maxLength - suffix.length;
 
     if (prefix.length > availableLength) {

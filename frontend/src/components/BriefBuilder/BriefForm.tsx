@@ -16,9 +16,30 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
   const [message, setMessage] = useState('Discover the Difference');
   const [aiPromptAssist, setAiPromptAssist] = useState(false);
   const [generateAnalytics, setGenerateAnalytics] = useState(false);
+  const [useArtStyle, setUseArtStyle] = useState(false);
+  const [artStyle, setArtStyle] = useState('photorealistic');
   const [copied, setCopied] = useState(false);
+  const [copiedEnhanced, setCopiedEnhanced] = useState(false);
   const [enhancedMessage, setEnhancedMessage] = useState<string>('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const artStyles = [
+    { value: 'photorealistic', label: 'Photorealistic' },
+    { value: 'minimalist', label: 'Minimalist' },
+    { value: 'vintage', label: 'Vintage' },
+    { value: 'modern', label: 'Modern' },
+    { value: 'luxury', label: 'Luxury / High-End' },
+    { value: 'playful', label: 'Playful / Cartoon' },
+    { value: 'watercolor', label: 'Watercolor' },
+    { value: 'oil-painting', label: 'Oil Painting' },
+    { value: 'sketch', label: 'Sketch / Hand-Drawn' },
+    { value: 'neon', label: 'Neon / Cyberpunk' },
+    { value: 'pastel', label: 'Pastel / Soft' },
+    { value: 'bold-graphic', label: 'Bold Graphic' },
+    { value: 'retro', label: 'Retro / 80s' },
+    { value: 'art-deco', label: 'Art Deco' },
+    { value: 'pop-art', label: 'Pop Art' }
+  ];
   const [products, setProducts] = useState<Product[]>([
     { id: 'prod-1', name: 'Premium Coffee Blend', description: 'Artisan roasted coffee beans with rich, smooth flavor' },
     { id: 'prod-2', name: 'Organic Green Tea', description: 'Premium loose-leaf green tea, sustainably sourced' }
@@ -70,6 +91,17 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
     }
   };
 
+  const copyEnhancedMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(enhancedMessage);
+      setCopiedEnhanced(true);
+      toast.success('Enhanced message copied to clipboard!');
+      setTimeout(() => setCopiedEnhanced(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy message');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -102,7 +134,9 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
       targetAudience,
       message: finalMessage,
       aiPromptAssist,
-      generateAnalytics
+      generateAnalytics,
+      useArtStyle,
+      artStyle: useArtStyle ? artStyle : undefined
     };
     onSubmit(brief);
   };
@@ -195,14 +229,33 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
               {/* Show Enhanced Message when available */}
               {aiPromptAssist && enhancedMessage && (
                 <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles size={16} className="text-purple-600" />
-                    <h4 className="text-xs font-semibold text-purple-900">AI-Enhanced Message</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-purple-600" />
+                      <h4 className="text-xs font-semibold text-purple-900">AI-Enhanced Message</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copyEnhancedMessage}
+                      className="flex items-center gap-1 px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 transition-colors"
+                    >
+                      {copiedEnhanced ? (
+                        <>
+                          <Check size={12} />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} />
+                          Copy
+                        </>
+                      )}
+                    </button>
                   </div>
                   <input
                     readOnly
                     value={enhancedMessage}
-                    className="w-full px-3 py-2 bg-white border border-purple-300 rounded font-medium text-gray-800 text-sm"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-gray-600 text-sm cursor-text"
                     onClick={(e) => e.currentTarget.select()}
                   />
                   <p className="mt-1 text-xs text-purple-700">
@@ -229,6 +282,44 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
                   </div>
                 </div>
               </label>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useArtStyle"
+                  checked={useArtStyle}
+                  onChange={(e) => setUseArtStyle(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="useArtStyle" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  Apply Art Style
+                  <div className="relative group">
+                    <Info size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                      Choose an artistic style to be applied to all generated images. This will influence the visual aesthetic of your campaign assets.
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Show Art Style Dropdown when checkbox is checked */}
+              {useArtStyle && (
+                <div className="mt-3">
+                  <select
+                    value={artStyle}
+                    onChange={(e) => setArtStyle(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {artStyles.map((style) => (
+                      <option key={style.value} value={style.value}>
+                        {style.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Show GA Tracking Code when checkbox is checked */}

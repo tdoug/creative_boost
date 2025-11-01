@@ -68,6 +68,12 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-800">{event.message}</p>
+                {event.prompt && (
+                  <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
+                    <p className="text-xs font-semibold text-purple-900 mb-1">Custom Art Style Prompt:</p>
+                    <p className="text-xs text-purple-800 font-mono">{event.prompt}</p>
+                  </div>
+                )}
                 {event.asset && (
                   <div className="mt-2 cursor-pointer" onClick={() => setSelectedAsset(event.asset!)}>
                     <img

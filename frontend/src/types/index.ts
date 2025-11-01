@@ -14,6 +14,8 @@ export interface CampaignBrief {
   locale?: string;
   aiPromptAssist?: boolean;
   generateAnalytics?: boolean;
+  useArtStyle?: boolean;
+  artStyle?: string;
 }
 
 export interface GeneratedAsset {
@@ -42,4 +44,5 @@ export interface ProgressEvent {
   asset?: GeneratedAsset;
   error?: string;
   completed?: boolean;
+  prompt?: string;
 }

@@ -125,10 +125,19 @@ export async function addTextOverlay(
     const imageWidth = metadata.width!;
     const imageHeight = metadata.height!;
 
-    // Calculate text box dimensions (approximately)
-    const textWidth = imageWidth - (padding * 2);
-    const textHeight = Math.ceil(fontSize * 1.5 * (text.length / (textWidth / fontSize)));
-    const boxHeight = textHeight + (padding * 2);
+    // Calculate text box dimensions with better estimation
+    // Assume ~10-12 characters per line at this font size for readability
+    const charsPerLine = Math.floor(imageWidth / (fontSize * 0.6));
+    const estimatedLines = Math.ceil(text.length / charsPerLine);
+    const lineHeight = fontSize * 1.4; // Standard line height
+    const textHeight = estimatedLines * lineHeight;
+
+    // Add extra padding for safety and ensure minimum height
+    const extraPadding = fontSize * 0.5;
+    const boxHeight = Math.max(
+      textHeight + (padding * 2) + extraPadding,
+      fontSize * 2.5 // Minimum box height to prevent cutoff
+    );
 
     // Position calculation
     let yPosition = 0;
@@ -140,7 +149,37 @@ export async function addTextOverlay(
       yPosition = 0;
     }
 
-    // Create SVG overlay with randomly selected professional advertising typeface
+    // Ensure yPosition is never negative
+    yPosition = Math.max(0, yPosition);
+
+    // Create SVG overlay with text wrapping
+    // Split text into words and create wrapped lines
+    const words = text.split(' ');
+    const maxCharsPerLine = Math.floor(imageWidth / (fontSize * 0.6));
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (testLine.length <= maxCharsPerLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    // Calculate vertical centering for multiline text
+    const totalTextHeight = lines.length * lineHeight;
+    const textStartY = yPosition + (boxHeight - totalTextHeight) / 2 + fontSize;
+
+    // Create SVG with proper text wrapping
+    const textElements = lines.map((line, index) => {
+      const y = textStartY + (index * lineHeight);
+      return `<text x="${imageWidth / 2}" y="${y}" class="text">${escapeXml(line)}</text>`;
+    }).join('\n        ');
+
     const svg = `
       <svg width="${imageWidth}" height="${imageHeight}">
         <defs>
@@ -156,7 +195,7 @@ export async function addTextOverlay(
           </style>
         </defs>
         <rect x="0" y="${yPosition}" width="${imageWidth}" height="${boxHeight}" fill="${backgroundColor}" />
-        <text x="${imageWidth / 2}" y="${yPosition + boxHeight / 2 + fontSize / 3}" class="text">${escapeXml(text)}</text>
+        ${textElements}
       </svg>
     `;
 

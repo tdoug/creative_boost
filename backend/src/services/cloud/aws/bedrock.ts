@@ -15,7 +15,8 @@ export class BedrockService {
   }
 
   /**
-   * Generate an image using AWS Bedrock (supports Stable Diffusion XL and Amazon Titan)
+   * Generate an image using AWS Bedrock
+   * Supports: Amazon Nova Canvas (best for art styles), Amazon Titan, Stable Diffusion XL
    */
   async generateImage(options: ImageGenerationOptions): Promise<Buffer> {
     try {

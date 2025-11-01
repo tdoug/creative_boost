@@ -86,9 +86,10 @@ function App() {
   const handleGenerateCampaign = async (brief: CampaignBrief) => {
     try {
       setIsGenerating(true);
-      setEvents([]);
-      // Don't clear assets - we want to keep existing ones visible
       setCurrentCampaignId(brief.campaignId);
+      setEvents([]); // Clear previous events
+
+      // Don't clear assets - we want to keep existing ones visible
 
       toast.loading('Starting campaign generation...', { id: 'generate' });
 
@@ -139,8 +140,8 @@ function App() {
           <BriefForm onSubmit={handleGenerateCampaign} isGenerating={isGenerating} />
         </div>
 
-        {/* Progress */}
-        {events.length > 0 && (
+        {/* Progress - Show when generating or when there are events to display */}
+        {(isGenerating || events.length > 0) && (
           <div className="mb-8">
             <GenerationProgress events={events} assets={assets} />
           </div>
