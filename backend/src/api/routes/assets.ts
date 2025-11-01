@@ -69,34 +69,9 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/assets/:campaignId
- * List all assets for a campaign
- */
-router.get('/:campaignId', async (req: Request, res: Response) => {
-  try {
-    const { campaignId } = req.params;
-    logger.info(`Listing assets for campaign: ${campaignId}`);
-
-    const files = await cloudProvider.list(campaignId);
-
-    const assets = files.map(file => ({
-      path: file,
-      url: `/api/assets/file/${encodeURIComponent(file)}`
-    }));
-
-    res.json({ assets });
-  } catch (error) {
-    logger.error('Error listing assets:', error);
-    res.status(500).json({
-      error: 'Failed to list assets',
-      details: String(error)
-    });
-  }
-});
-
-/**
  * GET /api/assets/file/:filePath
  * Serve a specific asset file
+ * NOTE: This route MUST come BEFORE /:campaignId to prevent route conflicts
  */
 router.get('/file/*', async (req: Request, res: Response) => {
   try {
@@ -127,6 +102,33 @@ router.get('/file/*', async (req: Request, res: Response) => {
     logger.error('Error serving asset:', error);
     res.status(404).json({
       error: 'Asset not found',
+      details: String(error)
+    });
+  }
+});
+
+/**
+ * GET /api/assets/:campaignId
+ * List all assets for a campaign
+ * NOTE: This route MUST come AFTER /file/* to prevent route conflicts
+ */
+router.get('/:campaignId', async (req: Request, res: Response) => {
+  try {
+    const { campaignId } = req.params;
+    logger.info(`Listing assets for campaign: ${campaignId}`);
+
+    const files = await cloudProvider.list(campaignId);
+
+    const assets = files.map(file => ({
+      path: file,
+      url: `/api/assets/file/${encodeURIComponent(file)}`
+    }));
+
+    res.json({ assets });
+  } catch (error) {
+    logger.error('Error listing assets:', error);
+    res.status(500).json({
+      error: 'Failed to list assets',
       details: String(error)
     });
   }

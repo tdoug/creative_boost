@@ -19,20 +19,62 @@ This project automates the creation of social media ad creatives by:
 - **Multi-Product Support** - Generate campaigns for multiple products simultaneously
 - **Multi-Aspect Ratio** - Automatic generation for 1:1 (Instagram), 9:16 (Stories), and 16:9 (YouTube) formats
 - **Cloud-Agnostic** - Support for AWS Bedrock, Azure OpenAI, and GCP Vertex AI
-- **Text Overlay** - Campaign messages overlaid on generated images
+- **Text Overlay** - Campaign messages overlaid on generated images without the hassle of poor AI imagegen text output
 - **Local & Cloud Storage** - Local filesystem or cloud storage (S3, Azure Blob, GCS)
 - **Real-time Progress** - WebSocket-based progress updates during generation
 
 ### React Web UI
 - **Campaign Brief Builder** - Interactive form to create campaigns
+- **AI-Powered Message Enhancement** - Automatically optimize messages for target demographics
 - **Generation Dashboard** - Real-time progress tracking with live previews
 - **Asset Gallery** - Browse, filter, and download generated assets
-- **Configuration Panel** - Manage cloud provider settings
+- **Campaign Management** - Save, load, and manage multiple campaigns
+- **Persistent Storage** - All generated assets are saved and viewable across sessions
 
 ### CLI Mode
-- Run campaigns from command line with JSON/YAML briefs
-- Batch processing support
-- Flexible configuration via environment variables
+- **Headless Generation** - Run campaign generation without the web UI
+- **Brief Validation** - Validate campaign briefs before generation
+- **JSON Summary Output** - Detailed generation reports saved to file
+- **Batch Processing** - Integrate into automation workflows
+- **Cost Optimization** - No frontend overhead, minimal resource usage
+- **CI/CD Integration** - Automate campaign generation in pipelines
+- **Scheduled Generation** - Use cron/task schedulers for bulk processing
+
+#### Cost & Scaling Benefits
+The CLI mode provides significant advantages for production workflows:
+
+**💰 Reduced Infrastructure Costs**
+- No web server required - runs as a simple script
+- Minimal memory footprint (~50MB vs ~200MB+ for full stack)
+- Can run on cheaper compute instances (t3.micro vs t3.medium)
+- **Estimated savings**: 60-70% on compute costs for batch workloads
+
+**⚡ Faster Iteration & Development**
+- Quick validation of campaign briefs without UI overhead
+- Rapid testing of cloud provider configurations
+- Instant feedback on brief errors before committing resources
+- **Time savings**: Validate 100 briefs in <1 minute vs manual UI testing
+
+**📈 Production Scalability**
+- Parallel processing: Run multiple CLI instances simultaneously
+- Container-friendly: Perfect for Kubernetes batch jobs or AWS Batch
+- Serverless compatible: Package as Lambda/Cloud Functions for event-driven generation
+- Queue integration: Process campaigns from SQS/Pub-Sub/RabbitMQ
+
+**🔄 Automation Workflows**
+```bash
+# Example: Scheduled bulk generation
+0 2 * * * cd /app && npm run cli generate -- -b /data/daily-campaigns/*.json
+
+# Example: CI/CD pipeline step
+- name: Generate Campaign Assets
+  run: npm run cli generate -- -b campaign-brief.json -o ./artifacts
+
+# Example: Event-driven processing
+aws sqs receive-message --queue-url $QUEUE | \
+  jq -r '.brief' | \
+  npm run cli generate -- -b /dev/stdin
+```
 
 ## Prerequisites
 
@@ -41,7 +83,6 @@ This project automates the creation of social media ad creatives by:
   - AWS account with Bedrock access (Stable Diffusion XL or Titan Image)
   - Azure account with OpenAI Service (DALL-E 3)
   - GCP account with Vertex AI (Imagen)
-  - OR use local mode (no cloud provider required, mock generation)
 
 ## Quick Start
 
@@ -62,7 +103,8 @@ npm run install:all
 # Create .env file
 cp .env.example .env
 
-# Edit .env and configure your cloud provider
+# Edit .env and configure your cloud provider.  Your local provider must be configured to work in your local environment
+# e.g. - For AWS, the `aws` command must work in your terminal.
 # For local development/testing, default settings work out of the box
 ```
 
@@ -79,14 +121,14 @@ PORT=3000
 ```bash
 CLOUD_PROVIDER=aws
 AWS_REGION=us-east-1
-AWS_S3_BUCKET=your-bucket-name  # or 'local' for filesystem
-BEDROCK_MODEL_ID=stability.stable-diffusion-xl-v1:0
-BEDROCK_LLM_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+AWS_S3_BUCKET=your-bucket-name  # or leave empty for local filesystem
+BEDROCK_MODEL_ID=amazon.nova-canvas-v1:0  # Recommended: Nova Canvas
+BEDROCK_LLM_MODEL_ID=us.anthropic.claude-3-5-sonnet-20241022-v2:0
 ```
 
 ### 3. Run the Application
 
-**Option A: Full Stack (Web UI + API)**
+**Option A: Web UI Mode (Recommended)**
 ```bash
 # Start both backend and frontend in development mode
 npm run dev
@@ -95,16 +137,28 @@ npm run dev
 # API runs at http://localhost:3000
 ```
 
-**Option B: Backend Only (CLI Mode)**
+**Option B: Development with "Watch" Enabled**
 ```bash
-# Run a campaign brief via CLI
-npm run cli -- --brief backend/input/briefs/summer-campaign.json
+# Start with hot refresh of both backend and frontend
+npm run watch
 
-# Or with options
-npm run cli -- --brief backend/input/briefs/coffee-campaign.json --ratios 1:1,9:16 --output ./output
+# Access the UI at http://localhost:5173
+# API runs at http://localhost:3000
 ```
 
-**Option C: Run Backend and Frontend Separately**
+**Option C: CLI Mode (Headless)**
+```bash
+# Generate campaign from a brief file
+npm run cli generate -- -b backend/input/briefs/summer-campaign.json
+
+# Validate a campaign brief without generating
+npm run cli validate -- -b backend/input/briefs/summer-campaign.json
+
+# Generate with custom output directory
+npm run cli generate -- -b backend/input/briefs/coffee-campaign.json -o ./custom-output
+```
+
+**Option D: Run Backend and Frontend Separately**
 ```bash
 # Terminal 1 - Backend API
 cd backend
@@ -121,113 +175,166 @@ npm run dev
 creative_boost/
 ├── backend/                     # Node.js backend
 │   ├── src/
-│   │   ├── api/                 # Express API server
-│   │   ├── cli.ts              # CLI entry point
-│   │   ├── core/               # Campaign and pipeline logic
-│   │   ├── services/           # Cloud providers, compliance
-│   │   ├── utils/              # Image processing, logging
-│   │   └── types/              # TypeScript types
+│   │   ├── api/                 # Express API server & routes
+│   │   ├── cli.ts               # CLI entry point
+│   │   ├── core/                # Campaign and pipeline logic
+│   │   ├── services/            # Cloud providers, compliance
+│   │   │   └── cloud/           # AWS, Azure, GCP providers
+│   │   ├── utils/               # Image processing, logging, config
+│   │   └── types/               # TypeScript types
 │   ├── input/
-│   │   ├── briefs/             # Example campaign briefs
-│   │   └── assets/             # Input assets library
-│   └── output/                 # Generated campaign assets
+│   │   ├── briefs/              # Example campaign briefs
+│   │   └── assets/              # Input assets library
+│   └── output/                  # Generated campaign assets
 ├── frontend/                    # React frontend
 │   ├── src/
-│   │   ├── components/         # React components
-│   │   │   ├── BriefBuilder/  # Campaign form
-│   │   │   ├── Dashboard/     # Progress tracking
-│   │   │   └── Gallery/       # Asset browsing
-│   │   ├── services/          # API client
-│   │   └── types/             # TypeScript types
+│   │   ├── components/          # React components
+│   │   │   ├── BriefBuilder/    # Campaign form
+│   │   │   ├── Dashboard/       # Progress tracking
+│   │   │   ├── Gallery/         # Asset browsing
+│   │   │   └── Menu/            # Navigation
+│   │   ├── services/            # API client
+│   │   └── types/               # TypeScript types
 │   └── public/
-├── .env                        # Environment configuration (gitignored)
-├── .env.example               # Environment template
-├── package.json               # Root package with scripts
-└── README.md                  # This file
+├── .env                         # Environment configuration (gitignored)
+├── .env.example                 # Environment template
+├── package.json                 # Root package with scripts
+└── README.md                    # This file
 ```
 
 ## Usage Guide
 
-### Creating a Campaign Brief
+### Using the CLI
 
-Campaign briefs are JSON files that define your campaign:
+The CLI provides a headless mode for campaign generation, ideal for automation, batch processing, and cost-effective production workflows.
 
-```json
-{
-  "campaignId": "summer-2024",
-  "products": [
-    {
-      "id": "sunscreen-spf50",
-      "name": "Ultra Defense SPF 50",
-      "description": "Premium sunscreen with advanced UV protection",
-      "existingAssets": []
-    },
-    {
-      "id": "after-sun-lotion",
-      "name": "Soothing After-Sun Lotion",
-      "description": "Hydrating after-sun care with aloe vera"
-    }
-  ],
-  "targetRegion": "North America",
-  "targetAudience": "Health-conscious adults 25-45",
-  "message": "Stay Protected All Summer Long",
-  "locale": "en-US"
-}
-```
-
-Save this as `backend/input/briefs/my-campaign.json`
-
-### Running via CLI
+#### Generate Campaign Assets
 
 ```bash
 # Basic usage
-npm run cli -- --brief backend/input/briefs/my-campaign.json
+npm run cli generate -- -b backend/input/briefs/summer-campaign.json
 
-# Specify output directory
-npm run cli -- --brief backend/input/briefs/my-campaign.json --output ./output/summer
+# With custom output directory
+npm run cli generate -- -b backend/input/briefs/coffee-campaign.json -o ./my-output
 
-# Generate specific aspect ratios only
-npm run cli -- --brief backend/input/briefs/my-campaign.json --ratios 1:1,9:16
+# Using different example briefs
+npm run cli generate -- -b backend/input/briefs/example-campaign.json
+```
 
-# Use specific cloud provider
-npm run cli -- --brief backend/input/briefs/my-campaign.json --cloud-provider azure
+**Output:**
+- Creates organized asset folders: `output/{campaignId}/{productId}/{aspectRatio}.png`
+- Generates a summary JSON: `output/{campaignId}/summary.json`
+- Shows real-time progress in the terminal
+- Exit code 0 on success, 1 on failure
+
+#### Validate a Campaign Brief
+
+```bash
+# Validate brief structure without generating assets
+npm run cli validate -- -b backend/input/briefs/summer-campaign.json
+```
+
+**Output:**
+- Checks JSON structure and required fields
+- Validates product definitions
+- Exit code 0 if valid, 1 if invalid
+
+#### CLI Command Reference
+
+```
+Commands:
+  generate    Generate campaign assets from a brief
+  validate    Validate a campaign brief without generating
+
+Options:
+  -b, --brief <path>    Path to campaign brief JSON file (required)
+  -o, --output <path>   Output directory (default: ./output)
+  -h, --help            Display help
+  -V, --version         Display version
+```
+
+#### Production Use Cases
+
+**1. Batch Campaign Generation**
+```bash
+# Process multiple campaigns overnight
+for brief in /data/campaigns/*.json; do
+  npm run cli generate -- -b "$brief" -o "/output/$(basename $brief .json)"
+done
+```
+
+**2. Brief Validation in CI/CD**
+```bash
+# Validate all briefs before deployment
+find ./campaigns -name "*.json" -exec \
+  npm run cli validate -- -b {} \; || exit 1
+```
+
+**3. Scheduled Bulk Processing**
+```bash
+# Crontab: Generate campaigns daily at 2 AM
+0 2 * * * cd /app && ./scripts/generate-daily-campaigns.sh
+```
+
+**4. Container-Based Scaling**
+```yaml
+# Kubernetes CronJob example
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: campaign-generator
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generator
+            image: creative-boost:latest
+            command: ["npm", "run", "cli", "generate"]
+            args: ["-b", "/data/brief.json"]
+```
+
+**5. AWS Batch Integration**
+```bash
+# Process campaigns from S3 via AWS Batch
+aws batch submit-job \
+  --job-name campaign-gen-${CAMPAIGN_ID} \
+  --job-definition creative-boost-cli \
+  --container-overrides 'command=["npm","run","cli","generate","-b","s3://briefs/campaign.json"]'
 ```
 
 ### Using the Web UI
 
-1. Start the development server: `npm run dev`
-2. Open http://localhost:5173
+1. **Start the Application**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Open the Web UI**: Navigate to http://localhost:5173
+
 3. **Build a Campaign**:
-   - Fill out the campaign form (products, audience, message)
-   - Upload existing assets (optional)
+   - Enter a Campaign ID (e.g., "summer-2024")
+   - Add products with names and descriptions
+   - Select target region and audience
+   - Enter your campaign message (or use AI enhancement)
    - Click "Generate Campaign"
+
 4. **Monitor Progress**:
-   - Watch real-time generation progress
-   - Preview assets as they're created
+   - Watch real-time generation progress in the dashboard
+   - See live previews as assets are created
+   - Track success/error status for each asset
+
 5. **Browse & Download**:
-   - View all generated assets in the gallery
-   - Filter by product or aspect ratio
-   - Download individual assets or entire campaigns
+   - View all generated assets in the gallery below
+   - Assets persist across sessions
+   - Download individual images directly from the gallery
 
-### Output Structure
-
-Generated assets are organized by campaign, product, and aspect ratio:
-
-```
-output/
-└── summer-2024/
-    ├── sunscreen-spf50/
-    │   ├── 1x1/
-    │   │   └── sunscreen-spf50-1x1.png
-    │   ├── 9x16/
-    │   │   └── sunscreen-spf50-9x16.png
-    │   └── 16x9/
-    │       └── sunscreen-spf50-16x9.png
-    └── after-sun-lotion/
-        ├── 1x1/
-        ├── 9x16/
-        └── 16x9/
-```
+6. **Manage Campaigns**:
+   - Use the hamburger menu (☰) to save campaigns
+   - Load previously saved campaigns
+   - Reuse campaign configurations
 
 ## Cloud Provider Configuration
 
@@ -235,24 +342,32 @@ output/
 
 **Prerequisites:**
 - AWS account with Bedrock access
-- Model access enabled for Stable Diffusion XL (or Titan Image Generator)
+- Model access enabled for Amazon Nova Canvas (or Titan Image Generator v2)
 - AWS credentials configured (`aws configure`)
 
 **Environment:**
 ```bash
 CLOUD_PROVIDER=aws
 AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=stability.stable-diffusion-xl-v1:0
-BEDROCK_LLM_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
-AWS_S3_BUCKET=your-bucket-name  # or 'local'
+BEDROCK_MODEL_ID=amazon.nova-canvas-v1:0  # Recommended
+# Alternative: amazon.titan-image-generator-v2:0
+BEDROCK_LLM_MODEL_ID=us.anthropic.claude-3-5-sonnet-20241022-v2:0
+AWS_S3_BUCKET=your-bucket-name  # or leave empty for local storage
 ```
+
+**Available Image Models:**
+- `amazon.nova-canvas-v1:0` - **Recommended** - Best for artistic styles and creative assets
+- `amazon.titan-image-generator-v2:0` - Good for product photography
+
+**Available LLM Models**
+- `us.anthropic.claude-3-5-sonnet-20241022-v2:0` - On-demand throughput version of Claude Sonnet 3.5
 
 **Request Model Access:**
 1. Go to AWS Console → Bedrock → Model access
-2. Request access to Stable Diffusion XL and Claude models
-3. Wait for approval (usually immediate for Claude, may take time for Stable Diffusion)
+2. Request access to Amazon Nova Canvas and Claude models (if necessary)
+3. Wait for approval (usually immediate for on-demand models)
 
-### Azure OpenAI
+### Azure OpenAI (UNTESTED)
 
 **Prerequisites:**
 - Azure subscription
@@ -265,10 +380,10 @@ CLOUD_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
 AZURE_OPENAI_API_KEY=your-api-key
 AZURE_OPENAI_DEPLOYMENT_NAME=dall-e-3
-AZURE_STORAGE_CONTAINER=local  # or Azure Blob container name
+AZURE_STORAGE_CONTAINER=campaign-assets  # or leave empty for local storage
 ```
 
-### GCP Vertex AI
+### GCP Vertex AI (UNTESTED)
 
 **Prerequisites:**
 - GCP project with Vertex AI enabled
@@ -281,7 +396,7 @@ CLOUD_PROVIDER=gcp
 GCP_PROJECT_ID=your-project-id
 GCP_LOCATION=us-central1
 VERTEX_AI_MODEL=imagegeneration@006
-GCP_BUCKET=local  # or Cloud Storage bucket name
+GCP_BUCKET=campaign-assets  # or leave empty for local storage
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ```
 
@@ -291,13 +406,25 @@ For testing without cloud services:
 
 ```bash
 CLOUD_PROVIDER=aws
-AWS_S3_BUCKET=local
+AWS_S3_BUCKET=  # Leave empty for local filesystem
 STORAGE_PATH=./output
 ```
 
-This uses local filesystem storage and mock image generation (placeholder images).
+### Analytics Configuration (Optional)
 
-## Available Scripts
+Track user behavior and campaign performance:
+
+```bash
+# Google Analytics 4
+GA_MEASUREMENT_ID=G-XXXXXXXXXX
+
+# Hotjar for user session recording
+HOTJAR_SITE_ID=1234567
+```
+
+**Note**: Analytics are optional. Leave these values blank to disable tracking.
+
+## Additional Available Scripts
 
 ```bash
 # Install all dependencies
@@ -312,21 +439,23 @@ npm run watch
 # Build for production
 npm run build
 
-# Run CLI
-npm run cli -- --brief <path-to-brief.json>
+# CLI mode
+npm run cli generate -- -b <path-to-brief.json>
+npm run cli validate -- -b <path-to-brief.json>
 
-# Backend only
+# Backend only (API server)
 npm run dev:backend
 
 # Frontend only
 npm run dev:frontend
+```
 
-# Testing
+## Testing
+```bash
 npm test                  # Run all tests (backend + frontend)
 npm run test:backend      # Run backend tests (Jest)
 npm run test:frontend     # Run frontend tests (Vitest)
 npm run test:watch        # Run tests in watch mode
-
 # Frontend test UI (optional)
 cd frontend && npm run test:ui
 ```
@@ -336,19 +465,38 @@ cd frontend && npm run test:ui
 The backend exposes the following REST API:
 
 ```
-GET    /health                    # Health check
-POST   /api/campaigns              # Create campaign
-GET    /api/campaigns              # List campaigns
-GET    /api/campaigns/:id          # Get campaign details
-POST   /api/campaigns/:id/generate # Generate assets
-GET    /api/assets/:campaignId     # List assets for campaign
-GET    /api/assets/:campaignId/:filename # Download asset
+GET    /health                         # Health check
+POST   /api/campaigns/generate          # Generate campaign assets
+POST   /api/campaigns/validate          # Validate campaign brief
+POST   /api/campaigns/enhance-prompt    # AI-enhance campaign message
+GET    /api/assets                      # List all assets
+GET    /api/assets/:campaignId          # List assets for specific campaign
+GET    /api/assets/file/*               # Download/serve asset file
 ```
 
 **WebSocket** endpoint for real-time progress:
 ```
-WS     /ws                        # Real-time generation updates
+WS     /ws?campaignId=<id>              # Real-time generation updates
 ```
+
+**Example API Usage:**
+```bash
+# Validate a campaign brief
+curl -X POST http://localhost:3000/api/campaigns/validate \
+  -H "Content-Type: application/json" \
+  -d @backend/input/briefs/summer-campaign.json
+
+# Enhance a campaign message
+curl -X POST http://localhost:3000/api/campaigns/enhance-prompt \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Stay cool this summer", "targetRegion": "North America", "targetAudience": "Adults 25-45"}'
+
+# Generate campaign assets
+curl -X POST http://localhost:3000/api/campaigns/generate \
+  -H "Content-Type: application/json" \
+  -d @backend/input/briefs/summer-campaign.json
+```
+
 
 ## Architecture Highlights
 
@@ -417,12 +565,54 @@ WebSocket connections provide live progress updates:
 
 ## Cost Considerations
 
-**Estimated costs per image:**
-- AWS Bedrock (Stable Diffusion XL): ~$0.04 per image
+### AI Generation Costs
+**Estimated costs per image (as of 2024):**
+- AWS Bedrock (Nova Canvas): ~$0.04 per image (on-demand)
+- AWS Bedrock (Titan Image v2): ~$0.008 per image (512x512)
 - Azure OpenAI (DALL-E 3): ~$0.04-0.08 per image
-- GCP Vertex AI (Imagen): ~$0.02-0.06 per image
+- GCP Vertex AI (Imagen 3): ~$0.02-0.06 per image
 
-**Local mode**: Free (uses mock generation)
+**Note**: Prices vary by region and usage tier. Check your cloud provider's pricing page for current rates.
+
+### Infrastructure Costs
+
+**Web UI Mode (Full Stack)**
+- EC2 t3.medium or equivalent: ~$30/month
+- Load balancer: ~$20/month
+- **Total**: ~$50/month for always-on service
+
+**CLI Mode (Batch Processing)**
+- EC2 t3.micro (scheduled): ~$5/month (4 hours/day)
+- AWS Batch (on-demand): Pay only during generation
+- Lambda/Cloud Functions: $0.20 per million requests
+- **Total**: ~$5-10/month for scheduled batch jobs
+
+**Cost Optimization Example:**
+```
+Campaign: 100 products × 3 aspect ratios = 300 images
+Generation time: ~15 minutes
+Frequency: Daily
+
+Web UI (always-on): $50/month
+CLI (scheduled):    $8/month (t3.micro, 15 min/day)
+
+Savings: 84% ($504/year)
+```
+
+### Scalability ROI
+
+**Scenario: Scaling from 10 to 1,000 campaigns/month**
+
+| Approach | Infrastructure | Cost/Month | Scaling Complexity |
+|----------|---------------|------------|-------------------|
+| Web UI Manual | t3.large + team time | $200 + labor | High - requires manual effort |
+| Web UI Automated | t3.large 24/7 | $70 | Medium - needs always-on server |
+| CLI + AWS Batch | On-demand compute | $15 | Low - auto-scales |
+| CLI + Lambda | Serverless | $8 | Minimal - fully managed |
+
+**Recommended Approach:**
+- **Development/Testing**: Web UI for interactive campaign building
+- **Production/Scale**: CLI mode for automated, cost-effective generation
 
 ## Development Roadmap
 

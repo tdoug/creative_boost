@@ -56,7 +56,7 @@ export class AzureOpenAIService {
         throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!data.data || data.data.length === 0) {
         throw new Error('No image data returned from Azure OpenAI');
@@ -104,7 +104,7 @@ export class AzureOpenAIService {
         throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.choices[0].message.content;
     } catch (error) {
       logger.error('Error generating text with Azure OpenAI:', error);
@@ -153,7 +153,7 @@ export class AzureOpenAIService {
         throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.choices[0].message.content;
     } catch (error) {
       logger.error('Error analyzing image with Azure OpenAI:', error);

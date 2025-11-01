@@ -62,7 +62,7 @@ export class VertexAIService {
         throw new Error(`Vertex AI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!data.predictions || data.predictions.length === 0) {
         throw new Error('No predictions returned from Vertex AI');
@@ -117,7 +117,7 @@ export class VertexAIService {
         throw new Error(`Vertex AI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       logger.error('Error generating text with Vertex AI:', error);
@@ -169,7 +169,7 @@ export class VertexAIService {
         throw new Error(`Vertex AI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       logger.error('Error analyzing image with Vertex AI:', error);

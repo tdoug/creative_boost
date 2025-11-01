@@ -4,7 +4,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 export class S3StorageService {
-  private client: S3Client;
+  private client!: S3Client;
   private bucket: string;
   private useLocal: boolean;
   private localPath: string;
