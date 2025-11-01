@@ -10,18 +10,25 @@ interface AssetGridProps {
 
 export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
   const [filterRatio, setFilterRatio] = useState<string>('all');
-  const [filterProduct, setFilterProduct] = useState<string>('all');
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null);
 
-  const filteredAssets = assets.filter(asset => {
-    if (filterRatio !== 'all' && asset.aspectRatio !== filterRatio) return false;
-    if (filterProduct !== 'all' && asset.productId !== filterProduct) return false;
-    return true;
-  });
+  // Extract timestamp from asset path for sorting
+  const getAssetTimestamp = (asset: GeneratedAsset): number => {
+    // Path format: campaignId/productId/aspectRatio_timestamp.png
+    const match = asset.path.match(/_(\d+)\.\w+$/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Filter by aspect ratio and sort by timestamp (newest first)
+  const filteredAssets = assets
+    .filter(asset => {
+      if (filterRatio !== 'all' && asset.aspectRatio !== filterRatio) return false;
+      return true;
+    })
+    .sort((a, b) => getAssetTimestamp(b) - getAssetTimestamp(a));
 
   const uniqueRatios = Array.from(new Set(assets.map(a => a.aspectRatio)));
-  const uniqueProducts = Array.from(new Set(assets.map(a => ({ id: a.productId, name: a.productName }))));
 
   const downloadAsset = async (asset: GeneratedAsset) => {
     try {
@@ -86,22 +93,6 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
             ))}
           </select>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Product
-          </label>
-          <select
-            value={filterProduct}
-            onChange={(e) => setFilterProduct(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Products</option>
-            {uniqueProducts.map(product => (
-              <option key={product.id} value={product.id}>{product.name}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {/* Asset Grid */}
@@ -115,6 +106,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
             <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-square bg-gray-100 cursor-pointer" onClick={() => setSelectedAsset(asset)}>
                 <img
+                  key={`${asset.path}-${Date.now()}`}
                   src={assetsApi.getAssetUrl(asset.path)}
                   alt={`${asset.productName} - ${asset.aspectRatio}`}
                   className="w-full h-full object-contain hover:opacity-90 transition-opacity"

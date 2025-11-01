@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BriefForm } from './components/BriefBuilder/BriefForm';
 import { GenerationProgress } from './components/Dashboard/GenerationProgress';
 import { AssetGrid } from './components/Gallery/AssetGrid';
 import { CampaignBrief, ProgressEvent, GeneratedAsset } from './types';
 import { campaignApi, createWebSocket, assetsApi } from './services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ArrowDown } from 'lucide-react';
 
 function App() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -13,6 +13,7 @@ function App() {
   const [assets, setAssets] = useState<GeneratedAsset[]>([]);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
   const [isLoadingAssets, setIsLoadingAssets] = useState(true);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   // Load all existing assets on mount
   useEffect(() => {
@@ -27,8 +28,9 @@ function App() {
       }
     };
 
+    // Initial load
     loadExistingAssets();
-  }, []);
+  }, []); // Only run once on mount
 
   useEffect(() => {
     if (!currentCampaignId) return;
@@ -39,7 +41,7 @@ function App() {
       console.log('WebSocket connected');
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       const progressEvent: ProgressEvent = JSON.parse(event.data);
       console.log('Progress event:', progressEvent);
 
@@ -52,6 +54,15 @@ function App() {
       if (progressEvent.type === 'complete') {
         setIsGenerating(false);
         toast.success('Campaign generation complete!');
+
+        // Refresh gallery once when generation batch completes
+        try {
+          const latestAssets = await assetsApi.listAllAssets();
+          console.log(`Gallery refreshed: ${latestAssets.length} assets`);
+          setAssets(latestAssets);
+        } catch (error) {
+          console.error('Error refreshing gallery after completion:', error);
+        }
       } else if (progressEvent.type === 'error' && !progressEvent.productId) {
         setIsGenerating(false);
         toast.error('Campaign generation failed');
@@ -91,6 +102,10 @@ function App() {
     }
   };
 
+  const scrollToGallery = () => {
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
@@ -98,12 +113,21 @@ function App() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3">
-            <Sparkles className="text-blue-600" size={32} />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Creative Boost</h1>
-              <p className="text-sm text-gray-600">AI-Powered Campaign Generation</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="text-blue-600" size={32} />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Creative Boost</h1>
+                <p className="text-sm text-gray-600">AI-Powered Campaign Generation</p>
+              </div>
             </div>
+            <button
+              onClick={scrollToGallery}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <ArrowDown size={20} />
+              Jump to Gallery
+            </button>
           </div>
         </div>
       </header>
@@ -125,7 +149,7 @@ function App() {
         </div>
 
         {/* Asset Gallery - Full Width */}
-        <div className="mt-8">
+        <div ref={galleryRef} className="mt-8">
           <AssetGrid assets={assets} />
         </div>
       </main>

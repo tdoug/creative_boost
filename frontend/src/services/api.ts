@@ -37,10 +37,17 @@ export const assetsApi = {
     return response.data.assets;
   },
 
-  getAssetUrl(assetPath: string): string {
+  getAssetUrl(assetPath: string, bustCache: boolean = true): string {
     // Encode each path segment separately to preserve slashes
     const segments = assetPath.split('/').map(segment => encodeURIComponent(segment));
-    return `${API_BASE_URL}/api/assets/file/${segments.join('/')}`;
+    const baseUrl = `${API_BASE_URL}/api/assets/file/${segments.join('/')}`;
+
+    // Add cache-busting parameter to force browser to reload images
+    if (bustCache) {
+      return `${baseUrl}?t=${Date.now()}`;
+    }
+
+    return baseUrl;
   }
 };
 

@@ -71,6 +71,7 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
                 {event.asset && (
                   <div className="mt-2 cursor-pointer" onClick={() => setSelectedAsset(event.asset!)}>
                     <img
+                      key={`${event.asset.path}-${Date.now()}`}
                       src={assetsApi.getAssetUrl(event.asset.path)}
                       alt={`${event.asset.productName} - ${event.asset.aspectRatio}`}
                       className="w-32 h-32 object-cover rounded border border-gray-200 hover:opacity-90 transition-opacity"

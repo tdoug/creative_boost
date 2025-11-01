@@ -26,6 +26,11 @@ export class BedrockService {
       const isNova = this.modelId.includes('nova');
       const isStableDiffusion = this.modelId.includes('stability');
 
+      // Generate truly random seed combining timestamp and random values
+      // This ensures each generation is unique even if called in rapid succession
+      const randomSeed = Math.floor((Date.now() * Math.random()) % 2147483647);
+      logger.info(`Using random seed: ${randomSeed} for image generation`);
+
       let body: string;
 
       if (isTitan || isNova) {
@@ -42,7 +47,7 @@ export class BedrockService {
             height: options.height,
             width: options.width,
             cfgScale: 8.0,
-            seed: Math.floor(Math.random() * 2147483647)
+            seed: randomSeed
           }
         });
       } else if (isStableDiffusion) {
@@ -59,7 +64,7 @@ export class BedrockService {
             }] : [])
           ],
           cfg_scale: 7,
-          seed: Math.floor(Math.random() * 1000000),
+          seed: randomSeed,
           steps: 30,
           width: options.width,
           height: options.height,
