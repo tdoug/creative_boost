@@ -12,8 +12,36 @@ export const api = axios.create({
 
 export const campaignApi = {
   async generateCampaign(brief: CampaignBrief): Promise<{ campaignId: string }> {
-    const response = await api.post('/api/campaigns/generate', brief);
-    return response.data;
+    // Check if there's a logo file to upload
+    const hasLogoFile = brief.brandAssets?.logo instanceof File;
+
+    if (hasLogoFile) {
+      // Send as multipart/form-data
+      const formData = new FormData();
+      formData.append('logo', brief.brandAssets!.logo as File);
+
+      // Create a copy of brief without the File object
+      const briefData = {
+        ...brief,
+        brandAssets: {
+          ...brief.brandAssets,
+          logo: undefined // Remove File object from JSON
+        }
+      };
+
+      formData.append('brief', JSON.stringify(briefData));
+
+      const response = await axios.post(`${API_BASE_URL}/api/campaigns/generate`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } else {
+      // Send as regular JSON
+      const response = await api.post('/api/campaigns/generate', brief);
+      return response.data;
+    }
   },
 
   async validateBrief(brief: CampaignBrief): Promise<{ valid: boolean; error?: string }> {

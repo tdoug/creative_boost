@@ -87,8 +87,20 @@ export function generateImagePrompt(
     ? getStyleModifiers(brief.artStyle)
     : 'photorealistic, ultra-sharp, 8k, professional grading';
 
+  // Build brand color elements string
+  let brandElements = '';
+  if (brief.brandAssets) {
+    const { primaryColor, secondaryColor } = brief.brandAssets;
+
+    if (primaryColor && secondaryColor) {
+      brandElements += ` Use brand colors: ${primaryColor} as primary, ${secondaryColor} as accent.`;
+    } else if (primaryColor) {
+      brandElements += ` Use brand color: ${primaryColor}.`;
+    }
+  }
+
   // Build prompt with quality keywords and style
-  let prompt = `Award-winning premium advertisement, luxury commercial editorial. Professional product: ${productName}. ${productDescription}. Clean studio background, impeccable lighting, ${styleModifiers}, cinematic, premium showcase.`;
+  let prompt = `Award-winning premium advertisement, luxury commercial editorial. Professional product: ${productName}. ${productDescription}.${brandElements} Clean studio background, impeccable lighting, ${styleModifiers}, cinematic, premium showcase.`;
 
   // Add text requirement if requested (for AI models that support text rendering)
   // Otherwise, explicitly request no text
@@ -102,7 +114,7 @@ export function generateImagePrompt(
   if (prompt.length > maxLength) {
     const prefix = `Premium advertisement. Professional product: ${productName}. ${productDescription}`;
     const textPart = includeText && brief.message ? `. Bold text: "${brief.message}"` : '. No text in image';
-    const suffix = `${textPart}. Studio lighting, ${styleModifiers}, cinematic.`;
+    const suffix = `${brandElements}${textPart}. Studio lighting, ${styleModifiers}, cinematic.`;
     const availableLength = maxLength - suffix.length;
 
     if (prefix.length > availableLength) {

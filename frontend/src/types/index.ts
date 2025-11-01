@@ -5,6 +5,12 @@ export interface Product {
   existingAssets?: string[];
 }
 
+export interface BrandAssets {
+  logo?: File | string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
 export interface CampaignBrief {
   campaignId: string;
   products: Product[];
@@ -16,6 +22,7 @@ export interface CampaignBrief {
   generateAnalytics?: boolean;
   useArtStyle?: boolean;
   artStyle?: string;
+  brandAssets?: BrandAssets;
 }
 
 export interface GeneratedAsset {

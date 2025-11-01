@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Info, Copy, Check, Sparkles } from 'lucide-react';
-import { CampaignBrief, Product } from '../../types';
+import { Plus, Trash2, Info, Copy, Check, Sparkles, ChevronDown, ChevronRight, Upload, X } from 'lucide-react';
+import { CampaignBrief, Product, BrandAssets } from '../../types';
 import toast from 'react-hot-toast';
 import { campaignApi } from '../../services/api';
 
@@ -21,12 +21,16 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
   const [message, setMessage] = useState('Discover the Difference');
   const [aiPromptAssist, setAiPromptAssist] = useState(false);
   const [generateAnalytics, setGenerateAnalytics] = useState(false);
+  const [showAnalyticsCode, setShowAnalyticsCode] = useState(false);
   const [useArtStyle, setUseArtStyle] = useState(false);
   const [artStyle, setArtStyle] = useState('photorealistic');
   const [copied, setCopied] = useState(false);
   const [copiedEnhanced, setCopiedEnhanced] = useState(false);
   const [enhancedMessage, setEnhancedMessage] = useState<string>('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [brandAssets, setBrandAssets] = useState<BrandAssets>({});
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const artStyles = [
     { value: 'photorealistic', label: 'Photorealistic' },
@@ -62,6 +66,12 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
       setGenerateAnalytics(loadedBrief.generateAnalytics || false);
       setUseArtStyle(loadedBrief.useArtStyle || false);
       setArtStyle(loadedBrief.artStyle || 'photorealistic');
+      setBrandAssets(loadedBrief.brandAssets || {});
+
+      // Handle logo preview if it's a string URL
+      if (loadedBrief.brandAssets?.logo && typeof loadedBrief.brandAssets.logo === 'string') {
+        setLogoPreview(loadedBrief.brandAssets.logo);
+      }
 
       toast.success(t('toast.campaignLoaded'));
       onBriefLoaded?.();
@@ -80,13 +90,14 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
         aiPromptAssist,
         generateAnalytics,
         useArtStyle,
-        artStyle: useArtStyle ? artStyle : undefined
+        artStyle: useArtStyle ? artStyle : undefined,
+        brandAssets: Object.keys(brandAssets).length > 0 ? brandAssets : undefined
       };
       onFormChange?.(currentBrief);
     }, 300); // Wait 300ms after last change before notifying parent
 
     return () => clearTimeout(timeoutId);
-  }, [campaignId, products, targetRegion, targetAudience, message, aiPromptAssist, generateAnalytics, useArtStyle, artStyle, onFormChange]);
+  }, [campaignId, products, targetRegion, targetAudience, message, aiPromptAssist, generateAnalytics, useArtStyle, artStyle, brandAssets, onFormChange]);
 
   const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX';
   const hotjarSiteId = import.meta.env.VITE_HOTJAR_SITE_ID || '1234567';
@@ -162,6 +173,46 @@ ${hotjarTrackingCode}`;
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo file size must be less than 5MB');
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+
+    // Update brand assets
+    setBrandAssets(prev => ({ ...prev, logo: file }));
+    toast.success('Logo uploaded successfully!');
+  };
+
+  const removeLogo = () => {
+    setLogoPreview('');
+    setBrandAssets(prev => {
+      const { logo, ...rest } = prev;
+      return rest;
+    });
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
+  };
+
+  const handleColorChange = (field: 'primaryColor' | 'secondaryColor', value: string) => {
+    setBrandAssets(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -196,7 +247,8 @@ ${hotjarTrackingCode}`;
       aiPromptAssist,
       generateAnalytics,
       useArtStyle,
-      artStyle: useArtStyle ? artStyle : undefined
+      artStyle: useArtStyle ? artStyle : undefined,
+      brandAssets: Object.keys(brandAssets).length > 0 ? brandAssets : undefined
     };
     onSubmit(brief);
   };
@@ -264,8 +316,88 @@ ${hotjarTrackingCode}`;
             />
           </div>
 
+          {/* Brand Assets */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-gray-900">{t('brief.brandAssets')}</h3>
+              <div className="relative group">
+                <Info size={16} className="text-gray-400 cursor-help" />
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                  {t('brief.brandAssetsDesc')}
+                </div>
+              </div>
+            </div>
+
+            {/* Logo Upload */}
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Brand Logo {t('brief.optional')}
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setBrandAssets(prev => ({ ...prev, logo: file }));
+                  }
+                }}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {brandAssets.logo && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {brandAssets.logo instanceof File ? brandAssets.logo.name : 'Logo uploaded'}
+                </p>
+              )}
+            </div>
+
+            {/* Brand Colors */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  {t('brief.primaryColor')} {t('brief.optional')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={brandAssets.primaryColor || '#FFD700'}
+                    onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={brandAssets.primaryColor || ''}
+                    onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                    placeholder="#FFD700"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  {t('brief.secondaryColor')} {t('brief.optional')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={brandAssets.secondaryColor || '#0066CC'}
+                    onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={brandAssets.secondaryColor || ''}
+                    onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                    placeholder="#0066CC"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Campaign Options */}
-          <div className="pt-4 space-y-3">
+          <div className="pt-4 border-t border-gray-200 space-y-3">
             <div>
               <div className="flex items-center gap-2">
                 <input
@@ -325,25 +457,6 @@ ${hotjarTrackingCode}`;
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="generateAnalytics"
-                checked={generateAnalytics}
-                onChange={(e) => setGenerateAnalytics(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="generateAnalytics" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                {t('brief.generateAnalyticsCode')}
-                <div className="relative group">
-                  <Info size={16} className="text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                    {t('brief.generateAnalyticsDesc')}
-                  </div>
-                </div>
-              </label>
-            </div>
-
             <div>
               <div className="flex items-center gap-2">
                 <input
@@ -382,40 +495,55 @@ ${hotjarTrackingCode}`;
               )}
             </div>
 
-            {/* Show Analytics Tracking Code when checkbox is checked */}
-            {generateAnalytics && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">{t('brief.analyticsTracking')}</h4>
-                  <button
-                    type="button"
-                    onClick={copyToClipboard}
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={14} />
-                        {t('brief.copied')}
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                        {t('brief.copyCode')}
-                      </>
-                    )}
-                  </button>
+            {/* Analytics Tracking Code - Collapsible */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowAnalyticsCode(!showAnalyticsCode)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-sm font-medium text-gray-700">{t('brief.analyticsTrackingCodeHeader')}</span>
+                {showAnalyticsCode ? (
+                  <ChevronDown size={20} className="text-gray-500" />
+                ) : (
+                  <ChevronRight size={20} className="text-gray-500" />
+                )}
+              </button>
+
+              {showAnalyticsCode && (
+                <div className="p-4 bg-white border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t('brief.analyticsTracking')}</h4>
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                    >
+                      {copied ? (
+                        <>
+                          <Check size={14} />
+                          {t('brief.copied')}
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          {t('brief.copyCode')}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={combinedTrackingCode}
+                    className="w-full h-48 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
+                    onClick={(e) => e.currentTarget.select()}
+                  />
+                  <p className="mt-2 text-xs text-gray-600">
+                    {t('brief.pasteInHead')} <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> {t('brief.section')}
+                  </p>
                 </div>
-                <textarea
-                  readOnly
-                  value={combinedTrackingCode}
-                  className="w-full h-48 px-3 py-2 bg-white border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
-                  onClick={(e) => e.currentTarget.select()}
-                />
-                <p className="mt-2 text-xs text-gray-600">
-                  {t('brief.pasteInHead')} <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> {t('brief.section')}
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         </div>

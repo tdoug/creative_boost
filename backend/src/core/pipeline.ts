@@ -22,7 +22,40 @@ export class CreativePipeline {
     const assets: GeneratedAsset[] = [];
     const errors: Array<{ productId: string; aspectRatio: string; error: string }> = [];
 
-    logger.info(`Starting pipeline execution for campaign: ${brief.campaignId}`);    
+    logger.info(`Starting pipeline execution for campaign: ${brief.campaignId}`);
+    logger.info(`Brand assets check: ${JSON.stringify({
+      hasBrandAssets: !!brief.brandAssets,
+      hasLogoBuffer: !!(brief.brandAssets && (brief.brandAssets as any).logoBuffer),
+      hasLogoPath: !!(brief.brandAssets?.logo),
+      logoBufferSize: (brief.brandAssets as any)?.logoBuffer?.length
+    })}`);
+
+    // Upload logo to storage if provided and get reference image buffer
+    let logoBuffer: Buffer | undefined;
+    if (brief.brandAssets && (brief.brandAssets as any).logoBuffer) {
+      try {
+        logger.info('Uploading brand logo to storage');
+        const logoFilename = `logos/${brief.campaignId}-logo.png`;
+        await this.cloudProvider.upload((brief.brandAssets as any).logoBuffer, logoFilename, 'image/png');
+        logoBuffer = (brief.brandAssets as any).logoBuffer;
+        logger.info(`Brand logo uploaded successfully - buffer size: ${logoBuffer?.length || 0} bytes`);
+      } catch (error) {
+        logger.error('Failed to upload logo:', error);
+        // Continue without logo
+      }
+    } else if (brief.brandAssets?.logo) {
+      // If logo path is provided, download it
+      try {
+        logger.info(`Downloading brand logo from: ${brief.brandAssets.logo}`);
+        logoBuffer = await this.cloudProvider.download(brief.brandAssets.logo);
+        logger.info(`Logo downloaded - buffer size: ${logoBuffer.length} bytes`);
+      } catch (error) {
+        logger.error('Failed to download logo:', error);
+        // Continue without logo
+      }
+    } else {
+      logger.info('No logo provided for this campaign');
+    }
 
     try {
       // Process each product
@@ -81,11 +114,26 @@ export class CreativePipeline {
               // Resize to aspect ratio
               const resized = await resizeImage(baseImage, aspectRatio.width, aspectRatio.height);
 
-              // Add campaign message overlay with varied styling (skip if using AI text rendering)
+              // Add campaign message overlay with logo and varied styling (skip if using AI text rendering)
               const useAIText = process.env.USE_AI_TEXT_RENDERING === 'true';
+
+              // Alternate logo position: use aspect ratio index to alternate (0=prefix, 1=suffix, 2=prefix)
+              const aspectRatioIndex = ASPECT_RATIOS.findIndex(ar => ar.label === aspectRatio.label);
+              const logoPosition = aspectRatioIndex % 2 === 0 ? 'prefix' : 'suffix';
+
+              if (!useAIText) {
+                logger.info(`Adding text overlay for ${product.name} ${aspectRatio.label} - Logo: ${logoBuffer ? `${logoBuffer.length} bytes, position: ${logoPosition}` : 'none'}`);
+              }
+
               const final = useAIText ? resized : await addTextOverlay(resized, {
                 text: brief.message,
-                fontSize: Math.floor(aspectRatio.width / 20)
+                fontSize: Math.floor(aspectRatio.width / 20),
+                logo: logoBuffer, // Include logo if available
+                logoPosition, // Alternates between prefix and suffix
+                brandColors: brief.brandAssets ? {
+                  primary: brief.brandAssets.primaryColor,
+                  secondary: brief.brandAssets.secondaryColor
+                } : undefined
                 // position, background, and font will be randomly selected
               });
 

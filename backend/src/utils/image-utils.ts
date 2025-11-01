@@ -71,6 +71,27 @@ function getRandomBackgroundStyle(): { bg: string; color: string } {
 }
 
 /**
+ * Determine if a color (hex) is dark or light
+ * Returns true if the color is dark (needs light text)
+ */
+function isColorDark(hexColor: string): boolean {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+
+  // Convert to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Calculate relative luminance (perceived brightness)
+  // Using the formula: (0.299*R + 0.587*G + 0.114*B)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+
+  // If luminance is less than 128 (midpoint of 0-255), it's dark
+  return luminance < 128;
+}
+
+/**
  * Resize an image to specified dimensions
  */
 export async function resizeImage(
@@ -97,11 +118,15 @@ export async function resizeImage(
 }
 
 /**
- * Add text overlay to an image
+ * Add text overlay with optional logo to an image
  */
 export async function addTextOverlay(
   imageBuffer: Buffer,
-  options: TextOverlayOptions
+  options: TextOverlayOptions & {
+    logo?: Buffer;
+    logoPosition?: 'prefix' | 'suffix';
+    brandColors?: { primary?: string; secondary?: string }
+  }
 ): Promise<Buffer> {
   try {
     // Randomly select font, position, and background style
@@ -115,10 +140,38 @@ export async function addTextOverlay(
       fontColor = selectedBgStyle.color,      // Use color from background style
       backgroundColor = selectedBgStyle.bg,   // Use background from style
       padding = 20,
-      position = selectedPosition
+      position = selectedPosition,
+      logo,
+      logoPosition = 'prefix',
+      brandColors
     } = options;
 
-    logger.info(`Adding text overlay: "${text}" | Font: ${selectedFont.split(',')[0]} | Position: ${position} | BG: ${backgroundColor}`);
+    // Apply brand colors if provided
+    let finalFontColor = fontColor;
+    let finalBackgroundColor = backgroundColor;
+
+    if (brandColors?.primary || brandColors?.secondary) {
+      // Use primary color for background and ensure good contrast for text
+      if (brandColors.primary) {
+        finalBackgroundColor = brandColors.primary;
+        // Use secondary color for text if available, otherwise use high contrast
+        if (brandColors.secondary) {
+          finalFontColor = brandColors.secondary;
+        } else {
+          // Determine if primary is dark or light and choose contrasting text color
+          finalFontColor = isColorDark(brandColors.primary) ? '#FFFFFF' : '#000000';
+        }
+      } else if (brandColors.secondary) {
+        // Only secondary color provided
+        finalBackgroundColor = brandColors.secondary;
+        finalFontColor = isColorDark(brandColors.secondary) ? '#FFFFFF' : '#000000';
+      }
+
+      logger.info(`Using brand colors - BG: ${finalBackgroundColor}, Text: ${finalFontColor}`);
+    }
+
+    const hasLogo = !!logo;
+    logger.info(`Adding text overlay: "${text}" | Font: ${selectedFont.split(',')[0]} | Position: ${position} | BG: ${finalBackgroundColor} | Logo: ${hasLogo ? logoPosition : 'none'}`);
 
     // Get image metadata
     const metadata = await sharp(imageBuffer).metadata();
@@ -170,14 +223,69 @@ export async function addTextOverlay(
     }
     if (currentLine) lines.push(currentLine);
 
+    // Process logo if provided
+    let logoBuffer: Buffer | undefined;
+    let logoWidth = 0;
+    let logoHeight = 0;
+
+    if (hasLogo && logo) {
+      // Resize logo to fit nicely with text (proportional to font size)
+      const logoMaxHeight = Math.floor(fontSize * 1.5);
+      const logoMetadata = await sharp(logo).metadata();
+      const logoAspectRatio = (logoMetadata.width || 1) / (logoMetadata.height || 1);
+      logoHeight = logoMaxHeight;
+      logoWidth = Math.floor(logoMaxHeight * logoAspectRatio);
+
+      logoBuffer = await sharp(logo)
+        .resize(logoWidth, logoHeight, {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .png()
+        .toBuffer();
+
+      logger.info(`Logo resized to ${logoWidth}x${logoHeight}px`);
+    }
+
+    // Calculate logo spacing
+    const logoSpacing = hasLogo ? Math.floor(fontSize * 0.8) : 0;
+
     // Calculate vertical centering for multiline text
     const totalTextHeight = lines.length * lineHeight;
     const textStartY = yPosition + (boxHeight - totalTextHeight) / 2 + fontSize;
 
+    // Estimate text width (rough approximation)
+    const longestLine = lines.reduce((a, b) => a.length > b.length ? a : b, '');
+    const estimatedTextWidth = longestLine.length * fontSize * 0.6;
+
+    // Calculate total content width and starting position
+    const totalContentWidth = hasLogo ? logoWidth + logoSpacing + estimatedTextWidth : estimatedTextWidth;
+    const contentStartX = Math.floor((imageWidth - totalContentWidth) / 2);
+
+    // Position logo and text based on logoPosition
+    let logoX = 0;
+    let textX = imageWidth / 2; // Default center
+
+    if (hasLogo) {
+      if (logoPosition === 'prefix') {
+        // Logo first, then text
+        logoX = Math.max(padding, contentStartX);
+        textX = logoX + logoWidth + logoSpacing + Math.floor(estimatedTextWidth / 2);
+      } else {
+        // Text first, then logo
+        textX = contentStartX + Math.floor(estimatedTextWidth / 2);
+        logoX = textX + Math.floor(estimatedTextWidth / 2) + logoSpacing;
+      }
+
+      // Ensure positions stay within bounds
+      logoX = Math.max(padding, Math.min(logoX, imageWidth - logoWidth - padding));
+      textX = Math.max(Math.floor(estimatedTextWidth / 2) + padding, Math.min(textX, imageWidth - Math.floor(estimatedTextWidth / 2) - padding));
+    }
+
     // Create SVG with proper text wrapping
     const textElements = lines.map((line, index) => {
       const y = textStartY + (index * lineHeight);
-      return `<text x="${imageWidth / 2}" y="${y}" class="text">${escapeXml(line)}</text>`;
+      return `<text x="${textX}" y="${y}" class="text">${escapeXml(line)}</text>`;
     }).join('\n        ');
 
     const svg = `
@@ -185,7 +293,7 @@ export async function addTextOverlay(
         <defs>
           <style>
             .text {
-              fill: ${fontColor};
+              fill: ${finalFontColor};
               font-size: ${fontSize}px;
               font-family: ${selectedFont};
               font-weight: 700;
@@ -194,19 +302,35 @@ export async function addTextOverlay(
             }
           </style>
         </defs>
-        <rect x="0" y="${yPosition}" width="${imageWidth}" height="${boxHeight}" fill="${backgroundColor}" />
+        <rect x="0" y="${yPosition}" width="${imageWidth}" height="${boxHeight}" fill="${finalBackgroundColor}" />
         ${textElements}
       </svg>
     `;
 
+    // Prepare composite layers
+    const compositeLayers: any[] = [
+      {
+        input: Buffer.from(svg),
+        top: 0,
+        left: 0
+      }
+    ];
+
+    // Add logo overlay if present
+    if (hasLogo && logoBuffer) {
+      const logoY = yPosition + Math.floor((boxHeight - logoHeight) / 2);
+
+      compositeLayers.push({
+        input: logoBuffer,
+        top: logoY,
+        left: logoX
+      });
+
+      logger.info(`Logo positioned at x:${logoX}, y:${logoY} | Text at x:${textX}`);
+    }
+
     const result = await sharp(imageBuffer)
-      .composite([
-        {
-          input: Buffer.from(svg),
-          top: 0,
-          left: 0
-        }
-      ])
+      .composite(compositeLayers)
       .png()
       .toBuffer();
 

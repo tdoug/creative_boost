@@ -8,6 +8,12 @@ export const ProductSchema = z.object({
   existingAssets: z.array(z.string()).optional()
 });
 
+export const BrandAssetsSchema = z.object({
+  logo: z.string().optional(), // Path to uploaded logo file
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional()
+});
+
 export const CampaignBriefSchema = z.object({
   campaignId: z.string(),
   products: z.array(ProductSchema).min(2, 'At least 2 products required'),
@@ -17,6 +23,7 @@ export const CampaignBriefSchema = z.object({
   locale: z.string().optional(),
   useArtStyle: z.boolean().optional(),
   artStyle: z.string().optional(),
+  brandAssets: BrandAssetsSchema.optional(),
   brandGuidelines: z.object({
     logoRequired: z.boolean().optional(),
     brandColors: z.array(z.string()).optional(),
@@ -25,6 +32,7 @@ export const CampaignBriefSchema = z.object({
 });
 
 export type Product = z.infer<typeof ProductSchema>;
+export type BrandAssets = z.infer<typeof BrandAssetsSchema>;
 export type CampaignBrief = z.infer<typeof CampaignBriefSchema>;
 
 // Aspect Ratio Configuration

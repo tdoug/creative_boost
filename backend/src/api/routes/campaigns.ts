@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { validateCampaignBrief } from '../../core/campaign';
 import { CreativePipeline } from '../../core/pipeline';
 import { logger } from '../../utils/logger';
@@ -7,6 +8,22 @@ import { WebSocket } from 'ws';
 import { createCloudProviderFromEnv } from '../../services/cloud';
 
 const router = Router();
+
+// Configure multer for file uploads (store in memory)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only accept image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 // Store active WebSocket connections by campaign ID
 const activeConnections = new Map<string, WebSocket>();
@@ -73,13 +90,29 @@ IMPORTANT: Return ONLY the enhanced message text, nothing else. No explanations,
 /**
  * POST /api/campaigns/generate
  * Generate campaign assets
+ * Accepts multipart/form-data with 'brief' (JSON) and optional 'logo' (image file)
  */
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', upload.single('logo'), async (req: Request, res: Response) => {
   try {
     logger.info('Received campaign generation request');
 
-    // Validate campaign brief
-    const brief: CampaignBrief = validateCampaignBrief(req.body);
+    // Parse campaign brief from form data or JSON body
+    let briefData = req.body.brief ? JSON.parse(req.body.brief) : req.body;
+
+    // Validate campaign brief (this strips extra fields)
+    const brief: CampaignBrief = validateCampaignBrief(briefData);
+
+    // If logo file was uploaded, add it AFTER validation
+    // (Zod validation strips fields not in schema)
+    if (req.file) {
+      logger.info(`Logo uploaded: ${req.file.originalname} (${req.file.size} bytes)`);
+      if (!brief.brandAssets) {
+        (brief as any).brandAssets = {};
+      }
+      // Store the logo as a Buffer for now (will be uploaded to storage in pipeline)
+      (brief.brandAssets as any).logoBuffer = req.file.buffer;
+      (brief.brandAssets as any).logoFilename = req.file.originalname;
+    }
 
     // Set up progress callback to send via WebSocket
     const progressCallback = (event: ProgressEvent) => {
