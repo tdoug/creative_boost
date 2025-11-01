@@ -32,7 +32,7 @@ export default {
       generatingButton: '生成中...',
       enhancingButton: '信息增强中...',
       aiMessageAssist: 'AI驱动的信息辅助',
-      aiMessageAssistDesc: '信息辅助功能生成信息建议，以更好地针对所描述的地区和人群。',
+      aiMessageAssistDesc: '信息辅助功能生成文化优化的信息建议，以更好地针对所描述的地区和人群。语言将自动适应所描述的地区。',
       analyticsTrackingCodeHeader: '分析跟踪代码',
       applyArtStyle: '应用艺术风格',
       applyArtStyleDesc: '选择应用于所有生成图像的艺术风格。这将影响您的营销活动素材的视觉美学。',

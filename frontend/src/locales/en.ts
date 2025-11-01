@@ -32,7 +32,7 @@ export default {
       generatingButton: 'Generating...',
       enhancingButton: 'Enhancing Message...',
       aiMessageAssist: 'AI-Powered Message Assist',
-      aiMessageAssistDesc: 'The Message Assist feature generates message suggestions to better target the described region and demographic.',
+      aiMessageAssistDesc: 'The Message Assist feature generates culturally optimized message suggestions to better target the described region and demographic. The language will be auto-adapted to fit the described region.',
       analyticsTrackingCodeHeader: 'Analytics Tracking Code',
       applyArtStyle: 'Apply Art Style',
       applyArtStyleDesc: 'Choose an artistic style to be applied to all generated images. This will influence the visual aesthetic of your campaign assets.',
