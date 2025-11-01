@@ -6,7 +6,7 @@ import * as path from 'path';
  * GCP Cloud Storage Service
  *
  * Uses Google Cloud Storage for file storage
- * Falls back to local filesystem if bucket is set to 'local'
+ * Falls back to local filesystem if bucket is empty/blank
  *
  * Note: Requires @google-cloud/storage package for full GCP support
  */
@@ -17,7 +17,7 @@ export class GCPCloudStorageService {
 
   constructor(bucketName: string) {
     this.bucketName = bucketName;
-    this.useLocal = !bucketName || bucketName === 'local';
+    this.useLocal = !bucketName; // Use local storage if bucket is empty/blank
     this.localPath = process.env.STORAGE_PATH || './backend/output';
 
     if (this.useLocal) {

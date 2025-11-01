@@ -11,7 +11,7 @@ export class S3StorageService {
 
   constructor(region: string, bucket: string) {
     this.bucket = bucket;
-    this.useLocal = !bucket || bucket === 'local';
+    this.useLocal = !bucket; // Use local storage if bucket is empty/blank
     this.localPath = process.env.STORAGE_PATH || './output';
 
     if (this.useLocal) {

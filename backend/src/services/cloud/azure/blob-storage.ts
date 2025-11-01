@@ -6,7 +6,7 @@ import * as path from 'path';
  * Azure Blob Storage Service
  *
  * Uses Azure Blob Storage for file storage
- * Falls back to local filesystem if container is set to 'local'
+ * Falls back to local filesystem if container is empty/blank
  *
  * Note: Requires @azure/storage-blob package for full Azure support
  */
@@ -19,7 +19,7 @@ export class AzureBlobStorageService {
   constructor(accountName: string, containerName: string) {
     this.accountName = accountName;
     this.containerName = containerName;
-    this.useLocal = !containerName || containerName === 'local';
+    this.useLocal = !containerName; // Use local storage if container is empty/blank
     this.localPath = process.env.STORAGE_PATH || './backend/output';
 
     if (this.useLocal) {

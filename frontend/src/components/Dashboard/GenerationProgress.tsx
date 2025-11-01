@@ -6,9 +6,10 @@ import { assetsApi } from '../../services/api';
 interface GenerationProgressProps {
   events: ProgressEvent[];
   assets: GeneratedAsset[];
+  isGenerating: boolean;
 }
 
-export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets }) => {
+export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets, isGenerating }) => {
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
   const getIcon = (event: ProgressEvent) => {
     if (event.type === 'complete' || event.completed) {
@@ -60,33 +61,40 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-6">Generation Progress</h2>
 
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {uniqueEvents.map((event, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded">
-              <div className="flex-shrink-0 mt-1">
-                {getIcon(event)}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-800">{event.message}</p>
-                {event.prompt && (
-                  <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
-                    <p className="text-xs font-semibold text-purple-900 mb-1">Custom Art Style Prompt:</p>
-                    <p className="text-xs text-purple-800 font-mono">{event.prompt}</p>
-                  </div>
-                )}
-                {event.asset && (
-                  <div className="mt-2 cursor-pointer" onClick={() => setSelectedAsset(event.asset!)}>
-                    <img
-                      key={`${event.asset.path}-${Date.now()}`}
-                      src={assetsApi.getAssetUrl(event.asset.path)}
-                      alt={`${event.asset.productName} - ${event.asset.aspectRatio}`}
-                      className="w-32 h-32 object-cover rounded border border-gray-200 hover:opacity-90 transition-opacity"
-                    />
-                  </div>
-                )}
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {uniqueEvents.length === 0 && isGenerating ? (
+            <div className="flex items-center justify-center p-8 w-full">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="text-blue-600 animate-spin" size={48} />
+                <p className="text-gray-600">Initializing campaign generation...</p>
               </div>
             </div>
-          ))}
+          ) : (
+            uniqueEvents.map((event, index) => (
+            <div key={index} className="flex-shrink-0 w-64 bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                {getIcon(event)}
+                <p className="text-sm font-medium text-gray-800 line-clamp-2">{event.message}</p>
+              </div>
+              {event.prompt && (
+                <div className="mb-3 p-2 bg-purple-50 border border-purple-200 rounded">
+                  <p className="text-xs font-semibold text-purple-900 mb-1">Custom Art Style Prompt:</p>
+                  <p className="text-xs text-purple-800 font-mono line-clamp-2">{event.prompt}</p>
+                </div>
+              )}
+              {event.asset && (
+                <div className="cursor-pointer" onClick={() => setSelectedAsset(event.asset!)}>
+                  <img
+                    key={`${event.asset.path}-${Date.now()}`}
+                    src={assetsApi.getAssetUrl(event.asset.path)}
+                    alt={`${event.asset.productName} - ${event.asset.aspectRatio}`}
+                    className="w-full aspect-square object-cover rounded border border-gray-200 hover:opacity-90 transition-opacity"
+                  />
+                </div>
+              )}
+            </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -79,7 +79,7 @@ export function createCloudProviderFromEnv(): CloudProvider {
     aws: provider === 'aws' ? {
       bedrockModelId: process.env.BEDROCK_MODEL_ID || 'amazon.nova-canvas-v1:0',
       bedrockLlmModelId: process.env.BEDROCK_LLM_MODEL_ID || 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-      s3Bucket: process.env.AWS_S3_BUCKET || 'local'
+      s3Bucket: process.env.AWS_S3_BUCKET || '' // Empty string = local storage
     } : undefined,
     azure: provider === 'azure' ? {
       openaiEndpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
@@ -87,12 +87,12 @@ export function createCloudProviderFromEnv(): CloudProvider {
       openaiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'dall-e-3',
       openaiApiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-01',
       storageAccountName: process.env.AZURE_STORAGE_ACCOUNT || '',
-      storageContainer: process.env.AZURE_STORAGE_CONTAINER || 'local'
+      storageContainer: process.env.AZURE_STORAGE_CONTAINER || '' // Empty string = local storage
     } : undefined,
     gcp: provider === 'gcp' ? {
       projectId: process.env.GCP_PROJECT_ID || '',
       vertexAIModel: process.env.VERTEX_AI_MODEL || 'imagegeneration@006',
-      storageBucket: process.env.GCP_BUCKET || 'local'
+      storageBucket: process.env.GCP_BUCKET || '' // Empty string = local storage
     } : undefined
   };
 

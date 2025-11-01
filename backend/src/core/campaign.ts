@@ -91,14 +91,17 @@ export function generateImagePrompt(
   let prompt = `Award-winning premium advertisement, luxury commercial editorial. Professional product: ${productName}. ${productDescription}. Clean studio background, impeccable lighting, ${styleModifiers}, cinematic, premium showcase.`;
 
   // Add text requirement if requested (for AI models that support text rendering)
+  // Otherwise, explicitly request no text
   if (includeText && brief.message) {
     prompt = `${prompt} Include bold Helvetica text overlay at bottom saying: "${brief.message}"`;
+  } else {
+    prompt = `${prompt} No text, no words, no letters in image.`;
   }
 
   // Truncate if needed while preserving quality keywords
   if (prompt.length > maxLength) {
     const prefix = `Premium advertisement. Professional product: ${productName}. ${productDescription}`;
-    const textPart = includeText && brief.message ? `. Bold text: "${brief.message}"` : '';
+    const textPart = includeText && brief.message ? `. Bold text: "${brief.message}"` : '. No text in image';
     const suffix = `${textPart}. Studio lighting, ${styleModifiers}, cinematic.`;
     const availableLength = maxLength - suffix.length;
 
@@ -116,5 +119,5 @@ export function generateImagePrompt(
  * Generate negative prompt for better image quality
  */
 export function generateNegativePrompt(): string {
-  return 'blurry, low quality, distorted, deformed, ugly, bad anatomy, watermark, amateur, unprofessional, poor lighting, oversaturated, undersaturated, grainy, pixelated, artifacts, cluttered, messy background, low resolution, poor composition, cheap-looking, stock photo aesthetic';
+  return 'text, words, letters, writing, typography, captions, labels, signs, watermark, logo text, blurry, low quality, distorted, deformed, ugly, bad anatomy, amateur, unprofessional, poor lighting, oversaturated, undersaturated, grainy, pixelated, artifacts, cluttered, messy background, low resolution, poor composition, cheap-looking, stock photo aesthetic';
 }

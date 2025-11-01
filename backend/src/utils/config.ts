@@ -26,7 +26,7 @@ export const config = {
   cloudProvider: process.env.CLOUD_PROVIDER || 'aws',
   aws: {
     region: process.env.AWS_REGION || 'us-east-1',
-    s3Bucket: process.env.AWS_S3_BUCKET || 'local',
+    s3Bucket: process.env.AWS_S3_BUCKET || '', // Empty string = local storage
     bedrockModelId: process.env.BEDROCK_MODEL_ID || 'amazon.nova-canvas-v1:0',
     bedrockLlmModelId: process.env.BEDROCK_LLM_MODEL_ID || 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
   },
