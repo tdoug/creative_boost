@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Menu, X, Upload, Download, Trash2, FileText, Copy, Save } from 'lucide-react';
 import { CampaignBrief } from '../../types';
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ interface HamburgerMenuProps {
 }
 
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLoadCampaign }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSavedCampaigns, setShowSavedCampaigns] = useState(false);
@@ -34,10 +36,10 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
 
       if (existing >= 0) {
         campaigns[existing] = brief;
-        toast.success('Campaign updated!');
+        toast.success(t('toast.campaignUpdated'));
       } else {
         campaigns.push(brief);
-        toast.success('Campaign saved!');
+        toast.success(t('toast.campaignSaved'));
       }
 
       localStorage.setItem('savedCampaigns', JSON.stringify(campaigns));
@@ -50,7 +52,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
   // Save current campaign
   const handleSaveCurrent = () => {
     if (!currentBrief) {
-      toast.error('No campaign to save');
+      toast.error(t('toast.noCampaignToSave'));
       return;
     }
 
@@ -64,17 +66,17 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
       const campaigns = getSavedCampaigns();
       const filtered = campaigns.filter(c => c.campaignId !== campaignId);
       localStorage.setItem('savedCampaigns', JSON.stringify(filtered));
-      toast.success('Campaign deleted');
+      toast.success(t('toast.campaignDeleted'));
     } catch (error) {
       console.error('Error deleting campaign:', error);
-      toast.error('Failed to delete campaign');
+      toast.error(t('toast.campaignDeleted'));
     }
   };
 
   // Export current campaign as JSON
   const handleExport = () => {
     if (!currentBrief) {
-      toast.error('No campaign to export');
+      toast.error(t('toast.noCampaignToExport'));
       return;
     }
 
@@ -89,7 +91,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    toast.success('Campaign exported!');
+    toast.success(t('toast.campaignExported'));
     setIsOpen(false);
   };
 
@@ -100,11 +102,11 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
 
       // Validate required fields
       if (!parsed.campaignId || !parsed.products || !Array.isArray(parsed.products)) {
-        throw new Error('Invalid campaign format. Must include campaignId and products array.');
+        throw new Error(t('toast.invalidCampaignFormat'));
       }
 
       if (parsed.products.length < 2) {
-        throw new Error('Campaign must have at least 2 products.');
+        throw new Error(t('toast.minProductsRequired'));
       }
 
       onLoadCampaign(parsed);
@@ -112,9 +114,9 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
       setShowImportModal(false);
       setJsonInput('');
       setIsOpen(false);
-      toast.success('Campaign loaded successfully!');
+      toast.success(t('toast.campaignLoaded'));
     } catch (error: any) {
-      toast.error(error.message || 'Invalid JSON format');
+      toast.error(error.message || t('toast.invalidJson'));
     }
   };
 
@@ -130,20 +132,20 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
         const parsed = JSON.parse(text);
 
         if (!parsed.campaignId || !parsed.products || !Array.isArray(parsed.products)) {
-          throw new Error('Invalid campaign format');
+          throw new Error(t('toast.invalidCampaignFormat'));
         }
 
         if (parsed.products.length < 2) {
-          throw new Error('Campaign must have at least 2 products');
+          throw new Error(t('toast.minProductsRequired'));
         }
 
         onLoadCampaign(parsed);
         saveCampaign(parsed);
         setShowImportModal(false);
         setIsOpen(false);
-        toast.success('Campaign loaded from file!');
+        toast.success(t('toast.campaignLoadedFromFile'));
       } catch (error: any) {
-        toast.error(error.message || 'Invalid JSON file');
+        toast.error(error.message || t('toast.invalidJson'));
       }
     };
     reader.readAsText(file);
@@ -159,7 +161,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
     onLoadCampaign(brief);
     setShowSavedCampaigns(false);
     setIsOpen(false);
-    toast.success('Campaign loaded!');
+    toast.success(t('toast.campaignLoaded'));
   };
 
   const savedCampaigns = getSavedCampaigns();
@@ -190,7 +192,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
       >
         <div className="p-6 h-full overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Campaign Menu</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('menu.title')}</h2>
             <button
               onClick={() => setIsOpen(false)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
@@ -208,7 +210,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               <Save size={20} />
-              <span>Save Campaign</span>
+              <span>{t('menu.saveCampaign')}</span>
             </button>
 
             {/* Import Campaign */}
@@ -220,7 +222,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               className="w-full flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Upload size={20} />
-              <span>Import Campaign</span>
+              <span>{t('menu.importCampaign')}</span>
             </button>
 
             {/* Export Campaign */}
@@ -230,7 +232,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               <Download size={20} />
-              <span>Export Campaign</span>
+              <span>{t('menu.exportCampaign')}</span>
             </button>
 
             {/* Saved Campaigns */}
@@ -242,7 +244,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               className="w-full flex items-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <FileText size={20} />
-              <span>Saved Campaigns ({savedCampaigns.length})</span>
+              <span>{t('menu.savedCampaigns')} ({savedCampaigns.length})</span>
             </button>
           </div>
         </div>
@@ -254,7 +256,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Import Campaign</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{t('import.title')}</h3>
                 <button
                   onClick={() => {
                     setShowImportModal(false);
@@ -269,7 +271,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               {/* File Upload */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload JSON File
+                  {t('import.uploadFile')}
                 </label>
                 <input
                   ref={fileInputRef}
@@ -280,12 +282,12 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                 />
               </div>
 
-              <div className="text-center text-gray-500 mb-6">OR</div>
+              <div className="text-center text-gray-500 mb-6">{t('import.or')}</div>
 
               {/* Paste JSON */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paste JSON
+                  {t('import.pasteJson')}
                 </label>
                 <textarea
                   value={jsonInput}
@@ -303,7 +305,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Copy size={16} />
-                    Import from Paste
+                    {t('import.importButton')}
                   </div>
                 </button>
                 <button
@@ -313,7 +315,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
                 >
-                  Cancel
+                  {t('import.cancel')}
                 </button>
               </div>
             </div>
@@ -327,7 +329,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Saved Campaigns</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{t('saved.title')}</h3>
                 <button
                   onClick={() => setShowSavedCampaigns(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -339,7 +341,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
               {savedCampaigns.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <FileText size={48} className="mx-auto mb-4 text-gray-400" />
-                  <p>No saved campaigns yet</p>
+                  <p>{t('saved.noSaved')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -353,7 +355,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                           <h4 className="font-semibold text-gray-900">{campaign.campaignId}</h4>
                           <p className="text-sm text-gray-600 mt-1">{campaign.message}</p>
                           <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                            <span>{campaign.products.length} products</span>
+                            <span>{campaign.products.length} {t('saved.products')}</span>
                             <span>{campaign.targetRegion}</span>
                             <span>{campaign.targetAudience}</span>
                           </div>
@@ -362,12 +364,12 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                             <div className="flex flex-wrap gap-2 mt-2">
                               {campaign.aiPromptAssist && (
                                 <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
-                                  AI Assist
+                                  {t('saved.aiAssist')}
                                 </span>
                               )}
                               {campaign.generateAnalytics && (
                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                  Analytics
+                                  {t('saved.analytics')}
                                 </span>
                               )}
                               {campaign.useArtStyle && campaign.artStyle && (
@@ -383,11 +385,11 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                             onClick={() => handleLoadSaved(campaign)}
                             className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
                           >
-                            Load
+                            {t('saved.load')}
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm(`Delete campaign "${campaign.campaignId}"?`)) {
+                              if (confirm(`${t('saved.confirmDelete')} "${campaign.campaignId}"?`)) {
                                 deleteCampaign(campaign.campaignId);
                                 // Force re-render by closing and reopening
                                 setShowSavedCampaigns(false);

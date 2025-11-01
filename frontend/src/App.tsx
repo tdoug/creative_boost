@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BriefForm } from './components/BriefBuilder/BriefForm';
 import { GenerationProgress } from './components/Dashboard/GenerationProgress';
 import { AssetGrid } from './components/Gallery/AssetGrid';
 import { HamburgerMenu } from './components/Menu/HamburgerMenu';
+import { LanguageSelector } from './components/LanguageSelector/LanguageSelector';
 import { CampaignBrief, ProgressEvent, GeneratedAsset } from './types';
 import { campaignApi, createWebSocket, assetsApi } from './services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { Sparkles, ArrowDown } from 'lucide-react';
 
 function App() {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [assets, setAssets] = useState<GeneratedAsset[]>([]);
@@ -56,7 +59,7 @@ function App() {
 
       if (progressEvent.type === 'complete') {
         setIsGenerating(false);
-        toast.success('Campaign generation complete!');
+        toast.success(t('toast.generationComplete'));
 
         // Refresh gallery once when generation batch completes
         try {
@@ -68,13 +71,13 @@ function App() {
         }
       } else if (progressEvent.type === 'error' && !progressEvent.productId) {
         setIsGenerating(false);
-        toast.error('Campaign generation failed');
+        toast.error(t('toast.generationFailed'));
       }
     };
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
-      toast.error('Connection error');
+      toast.error(t('toast.connectionError'));
     };
 
     ws.onclose = () => {
@@ -95,14 +98,14 @@ function App() {
 
       // Don't clear assets - we want to keep existing ones visible
 
-      toast.loading('Starting campaign generation...', { id: 'generate' });
+      toast.loading(t('toast.generationStarted'), { id: 'generate' });
 
       await campaignApi.generateCampaign(brief);
 
-      toast.success('Campaign generation started!', { id: 'generate' });
+      toast.success(t('toast.generationStarted'), { id: 'generate' });
     } catch (error) {
       console.error('Error generating campaign:', error);
-      toast.error('Failed to start campaign generation', { id: 'generate' });
+      toast.error(t('toast.failedToStart'), { id: 'generate' });
       setIsGenerating(false);
     }
   };
@@ -132,19 +135,22 @@ function App() {
             <div className="flex items-center gap-3">
               <Sparkles className="text-blue-600" size={32} />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Creative Boost</h1>
-                <p className="text-sm text-gray-600">AI-Powered Campaign Generation</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('app.title')}</h1>
+                <p className="text-sm text-gray-600">{t('app.subtitle')}</p>
               </div>
             </div>
-            {assets.length > 0 && (
-              <button
-                onClick={scrollToGallery}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <ArrowDown size={20} />
-                Jump to Gallery
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              <LanguageSelector />
+              {assets.length > 0 && (
+                <button
+                  onClick={scrollToGallery}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <ArrowDown size={20} />
+                  {t('app.jumpToGallery')}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>

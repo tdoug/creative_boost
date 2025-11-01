@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Info, Copy, Check, Sparkles } from 'lucide-react';
 import { CampaignBrief, Product } from '../../types';
 import toast from 'react-hot-toast';
@@ -13,6 +14,7 @@ interface BriefFormProps {
 }
 
 export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, loadedBrief, onBriefLoaded, onFormChange }) => {
+  const { t } = useTranslation();
   const [campaignId, setCampaignId] = useState(`campaign-${Date.now()}`);
   const [targetRegion, setTargetRegion] = useState('United States');
   const [targetAudience, setTargetAudience] = useState('Young professionals aged 25-35');
@@ -61,10 +63,10 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
       setUseArtStyle(loadedBrief.useArtStyle || false);
       setArtStyle(loadedBrief.artStyle || 'photorealistic');
 
-      toast.success('Campaign loaded into form!');
+      toast.success(t('toast.campaignLoaded'));
       onBriefLoaded?.();
     }
-  }, [loadedBrief, onBriefLoaded]);
+  }, [loadedBrief, onBriefLoaded, t]);
 
   // Notify parent of form changes (debounced to avoid performance issues)
   useEffect(() => {
@@ -204,12 +206,12 @@ ${hotjarTrackingCode}`;
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Campaign Brief */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-6">Campaign Brief</h2>
+          <h2 className="text-2xl font-bold mb-6">{t('brief.title')}</h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Campaign ID
+              {t('brief.campaignId')}
             </label>
             <input
               type="text"
@@ -222,42 +224,42 @@ ${hotjarTrackingCode}`;
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Describe Your Target Region
+              {t('brief.targetRegion')}
             </label>
             <input
               type="text"
               value={targetRegion}
               onChange={(e) => setTargetRegion(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Describe Your Target Region"
+              placeholder={t('brief.targetRegionPlaceholder')}
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Describe Your Target Demographic
+              {t('brief.targetAudience')}
             </label>
             <input
               type="text"
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Describe Your Target Demographic"
+              placeholder={t('brief.targetAudiencePlaceholder')}
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Campaign Message
+              {t('brief.campaignMessage')}
             </label>
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Your campaign message..."
+              placeholder={t('brief.campaignMessagePlaceholder')}
               required
             />
           </div>
@@ -274,11 +276,11 @@ ${hotjarTrackingCode}`;
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="aiPromptAssist" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  AI-Powered Message Assist
+                  {t('brief.aiMessageAssist')}
                   <div className="relative group">
                     <Info size={16} className="text-gray-400 cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                      The Message Assist feature generates message suggestions to better target the described region and demographic.
+                      {t('brief.aiMessageAssistDesc')}
                     </div>
                   </div>
                 </label>
@@ -290,7 +292,7 @@ ${hotjarTrackingCode}`;
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Sparkles size={16} className="text-purple-600" />
-                      <h4 className="text-xs font-semibold text-purple-900">AI-Enhanced Message</h4>
+                      <h4 className="text-xs font-semibold text-purple-900">{t('brief.aiEnhancedMessage')}</h4>
                     </div>
                     <button
                       type="button"
@@ -300,12 +302,12 @@ ${hotjarTrackingCode}`;
                       {copiedEnhanced ? (
                         <>
                           <Check size={12} />
-                          Copied!
+                          {t('brief.copied')}
                         </>
                       ) : (
                         <>
                           <Copy size={12} />
-                          Copy
+                          {t('brief.copy')}
                         </>
                       )}
                     </button>
@@ -317,7 +319,7 @@ ${hotjarTrackingCode}`;
                     onClick={(e) => e.currentTarget.select()}
                   />
                   <p className="mt-1 text-xs text-purple-700">
-                    This culturally optimized message will be used in your campaign.
+                    {t('brief.culturallyOptimized')}
                   </p>
                 </div>
               )}
@@ -332,11 +334,11 @@ ${hotjarTrackingCode}`;
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
               <label htmlFor="generateAnalytics" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                Generate Analytics Tracking Code
+                {t('brief.generateAnalyticsCode')}
                 <div className="relative group">
                   <Info size={16} className="text-gray-400 cursor-help" />
                   <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                    Google Analytics tracking code can be auto-generated for the campaign.
+                    {t('brief.generateAnalyticsDesc')}
                   </div>
                 </div>
               </label>
@@ -352,11 +354,11 @@ ${hotjarTrackingCode}`;
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="useArtStyle" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  Apply Art Style
+                  {t('brief.applyArtStyle')}
                   <div className="relative group">
                     <Info size={16} className="text-gray-400 cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                      Choose an artistic style to be applied to all generated images. This will influence the visual aesthetic of your campaign assets.
+                      {t('brief.applyArtStyleDesc')}
                     </div>
                   </div>
                 </label>
@@ -384,7 +386,7 @@ ${hotjarTrackingCode}`;
             {generateAnalytics && (
               <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">Analytics Tracking Code (GA4 + Hotjar)</h4>
+                  <h4 className="text-sm font-semibold text-gray-700">{t('brief.analyticsTracking')}</h4>
                   <button
                     type="button"
                     onClick={copyToClipboard}
@@ -393,12 +395,12 @@ ${hotjarTrackingCode}`;
                     {copied ? (
                       <>
                         <Check size={14} />
-                        Copied!
+                        {t('brief.copied')}
                       </>
                     ) : (
                       <>
                         <Copy size={14} />
-                        Copy Code
+                        {t('brief.copyCode')}
                       </>
                     )}
                   </button>
@@ -410,8 +412,7 @@ ${hotjarTrackingCode}`;
                   onClick={(e) => e.currentTarget.select()}
                 />
                 <p className="mt-2 text-xs text-gray-600">
-                  Paste this code in the <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> section of your website.
-                  Includes both Google Analytics 4 and Hotjar tracking.
+                  {t('brief.pasteInHead')} <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> {t('brief.section')}
                 </p>
               </div>
             )}
@@ -422,13 +423,13 @@ ${hotjarTrackingCode}`;
         {/* Right Column - Products */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Products (min 2)</h3>
+            <h3 className="text-xl font-bold">{t('brief.products')}</h3>
             <button
               type="button"
               onClick={addProduct}
               className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
             >
-              <Plus size={16} /> Add
+              <Plus size={16} /> {t('brief.add')}
             </button>
           </div>
 
@@ -436,7 +437,7 @@ ${hotjarTrackingCode}`;
             {products.map((product, index) => (
               <div key={product.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-sm font-medium text-gray-700">Product {index + 1}</h4>
+                  <h4 className="text-sm font-medium text-gray-700">{t('brief.product')} {index + 1}</h4>
                   {products.length > 2 && (
                     <button
                       type="button"
@@ -454,14 +455,14 @@ ${hotjarTrackingCode}`;
                     value={product.name}
                     onChange={(e) => updateProduct(product.id, 'name', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Product name..."
+                    placeholder={t('brief.productNamePlaceholder')}
                     required
                   />
                   <textarea
                     value={product.description}
                     onChange={(e) => updateProduct(product.id, 'description', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Product description..."
+                    placeholder={t('brief.productDescriptionPlaceholder')}
                     rows={2}
                     required
                   />
@@ -479,7 +480,7 @@ ${hotjarTrackingCode}`;
           disabled={isGenerating || isEnhancing}
           className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {isEnhancing ? 'Enhancing Message...' : isGenerating ? 'Generating...' : 'Generate Campaign'}
+          {isEnhancing ? t('brief.enhancingButton') : isGenerating ? t('brief.generatingButton') : t('brief.generateButton')}
         </button>
       </div>
     </form>

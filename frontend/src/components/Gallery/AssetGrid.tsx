@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, Filter, X } from 'lucide-react';
 import { GeneratedAsset } from '../../types';
 import { assetsApi } from '../../services/api';
@@ -9,6 +10,7 @@ interface AssetGridProps {
 }
 
 export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
+  const { t } = useTranslation();
   const [filterRatio, setFilterRatio] = useState<string>('all');
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
     <>
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Asset Gallery</h2>
+          <h2 className="text-2xl font-bold">{t('gallery.title')}</h2>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Filter size={16} />
             <span>{filteredAssets.length} of {assets.length} assets</span>
@@ -79,14 +81,14 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
       {/* Filters */}
       <div className="flex items-center gap-3 mb-6">
         <label className="text-sm font-medium text-gray-700">
-          Aspect Ratio:
+          {t('progress.ratio')}:
         </label>
         <select
           value={filterRatio}
           onChange={(e) => setFilterRatio(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">All Ratios</option>
+          <option value="all">{t('gallery.filterAll')}</option>
           {uniqueRatios.map(ratio => (
             <option key={ratio} value={ratio}>{ratio}</option>
           ))}
@@ -96,7 +98,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
       {/* Asset Grid */}
       {filteredAssets.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          No assets generated yet. Create a campaign to get started!
+          {t('gallery.noAssetsDesc')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -124,7 +126,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
                   className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm transition-colors"
                 >
                   <Download size={16} className={downloadingAsset === asset.path ? 'animate-bounce' : ''} />
-                  {downloadingAsset === asset.path ? 'Downloading...' : 'Download'}
+                  {downloadingAsset === asset.path ? t('gallery.loading') : t('gallery.download')}
                 </button>
               </div>
             </div>
