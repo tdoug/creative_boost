@@ -133,20 +133,18 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Brief Builder */}
-          <div>
-            <BriefForm onSubmit={handleGenerateCampaign} isGenerating={isGenerating} />
-          </div>
-
-          {/* Right Column - Progress and Gallery */}
-          <div className="space-y-8">
-            {events.length > 0 && (
-              <GenerationProgress events={events} assets={assets} />
-            )}
-          </div>
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Brief Builder - Full Width */}
+        <div className="mb-8">
+          <BriefForm onSubmit={handleGenerateCampaign} isGenerating={isGenerating} />
         </div>
+
+        {/* Progress */}
+        {events.length > 0 && (
+          <div className="mb-8">
+            <GenerationProgress events={events} assets={assets} />
+          </div>
+        )}
 
         {/* Asset Gallery - Full Width */}
         <div ref={galleryRef} className="mt-8">

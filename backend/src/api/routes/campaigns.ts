@@ -4,6 +4,7 @@ import { CreativePipeline } from '../../core/pipeline';
 import { logger } from '../../utils/logger';
 import { CampaignBrief, ProgressEvent } from '../../types';
 import { WebSocket } from 'ws';
+import { createCloudProviderFromEnv } from '../../services/cloud';
 
 const router = Router();
 
@@ -17,6 +18,57 @@ export function setWebSocket(campaignId: string, ws: WebSocket) {
 export function removeWebSocket(campaignId: string) {
   activeConnections.delete(campaignId);
 }
+
+/**
+ * POST /api/campaigns/enhance-prompt
+ * Use AI to enhance campaign message for better targeting
+ */
+router.post('/enhance-prompt', async (req: Request, res: Response) => {
+  try {
+    const { message, targetRegion, targetAudience } = req.body;
+
+    if (!message || !targetRegion || !targetAudience) {
+      return res.status(400).json({
+        error: 'Missing required fields: message, targetRegion, targetAudience'
+      });
+    }
+
+    logger.info('Enhancing prompt with AI assistance');
+
+    const cloudProvider = createCloudProviderFromEnv();
+
+    const enhancementPrompt = `You are a cultural marketing expert. Enhance the following campaign message to better resonate with the target demographic and region.
+
+Original Message: "${message}"
+Target Region: ${targetRegion}
+Target Demographic: ${targetAudience}
+
+Provide an enhanced version that:
+1. Incorporates culturally relevant themes and values for the region
+2. Uses language that resonates with the demographic
+3. Maintains the core message intent
+4. Is concise and impactful (maximum 8 words)
+5. Uses professional advertising language
+
+IMPORTANT: Return ONLY the enhanced message text, nothing else. No explanations, no quotes, no preamble. Just the enhanced message.`;
+
+    const enhancedMessage = await cloudProvider.generateText(enhancementPrompt);
+    const trimmedMessage = enhancedMessage.trim().replace(/^["']|["']$/g, ''); // Remove quotes if present
+
+    logger.info(`Original: "${message}" -> Enhanced: "${trimmedMessage}"`);
+
+    res.json({
+      originalMessage: message,
+      enhancedMessage: trimmedMessage
+    });
+  } catch (error) {
+    logger.error('Error enhancing prompt:', error);
+    res.status(500).json({
+      error: 'Failed to enhance prompt',
+      details: String(error)
+    });
+  }
+});
 
 /**
  * POST /api/campaigns/generate

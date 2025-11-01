@@ -15,9 +15,11 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Request logging
+// Request logging (skip asset file requests to reduce log noise)
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`);
+  if (!req.path.startsWith('/api/assets/file/')) {
+    logger.info(`${req.method} ${req.path}`);
+  }
   next();
 });
 

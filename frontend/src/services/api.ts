@@ -23,6 +23,15 @@ export const campaignApi = {
     } catch (error: any) {
       return { valid: false, error: error.response?.data?.error || 'Validation failed' };
     }
+  },
+
+  async enhancePrompt(message: string, targetRegion: string, targetAudience: string): Promise<{ originalMessage: string; enhancedMessage: string }> {
+    const response = await api.post('/api/campaigns/enhance-prompt', {
+      message,
+      targetRegion,
+      targetAudience
+    });
+    return response.data;
   }
 };
 

@@ -101,7 +101,6 @@ router.get('/:campaignId', async (req: Request, res: Response) => {
 router.get('/file/*', async (req: Request, res: Response) => {
   try {
     const filePath = req.params[0];
-    logger.info(`Serving asset: ${filePath}`);
 
     // Check if file exists
     const exists = await cloudProvider.exists(filePath);

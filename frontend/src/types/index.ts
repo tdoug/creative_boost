@@ -12,6 +12,8 @@ export interface CampaignBrief {
   targetAudience: string;
   message: string;
   locale?: string;
+  aiPromptAssist?: boolean;
+  generateAnalytics?: boolean;
 }
 
 export interface GeneratedAsset {

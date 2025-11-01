@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info, Copy, Check, Sparkles } from 'lucide-react';
 import { CampaignBrief, Product } from '../../types';
+import toast from 'react-hot-toast';
+import { campaignApi } from '../../services/api';
 
 interface BriefFormProps {
   onSubmit: (brief: CampaignBrief) => void;
@@ -12,10 +14,29 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
   const [targetRegion, setTargetRegion] = useState('United States');
   const [targetAudience, setTargetAudience] = useState('Young professionals aged 25-35');
   const [message, setMessage] = useState('Discover the Difference');
+  const [aiPromptAssist, setAiPromptAssist] = useState(false);
+  const [generateAnalytics, setGenerateAnalytics] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [enhancedMessage, setEnhancedMessage] = useState<string>('');
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [products, setProducts] = useState<Product[]>([
     { id: 'prod-1', name: 'Premium Coffee Blend', description: 'Artisan roasted coffee beans with rich, smooth flavor' },
     { id: 'prod-2', name: 'Organic Green Tea', description: 'Premium loose-leaf green tea, sustainably sourced' }
   ]);
+
+  const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX';
+
+  const gaTrackingCode = `<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${gaMeasurementId}', {
+    'campaign_id': '${campaignId}',
+    'campaign_name': '${message}'
+  });
+</script>`;
 
   const addProduct = () => {
     const newProduct: Product = {
@@ -38,22 +59,60 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
     ));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(gaTrackingCode);
+      setCopied(true);
+      toast.success('Tracking code copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy code');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let finalMessage = message;
+
+    // If AI Prompt Assist is enabled, enhance the message first
+    if (aiPromptAssist) {
+      try {
+        setIsEnhancing(true);
+        toast.loading('Enhancing prompt with AI...', { id: 'enhance' });
+
+        const result = await campaignApi.enhancePrompt(message, targetRegion, targetAudience);
+        finalMessage = result.enhancedMessage;
+        setEnhancedMessage(finalMessage);
+
+        toast.success('Prompt enhanced!', { id: 'enhance' });
+      } catch (error) {
+        console.error('Error enhancing prompt:', error);
+        toast.error('Failed to enhance prompt, using original', { id: 'enhance' });
+        finalMessage = message;
+      } finally {
+        setIsEnhancing(false);
+      }
+    }
+
     const brief: CampaignBrief = {
       campaignId,
       products,
       targetRegion,
       targetAudience,
-      message
+      message: finalMessage,
+      aiPromptAssist,
+      generateAnalytics
     };
     onSubmit(brief);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-6">Campaign Brief</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Campaign Brief */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-6">Campaign Brief</h2>
 
         <div className="space-y-4">
           <div>
@@ -71,26 +130,28 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Region
+              Describe Your Target Region
             </label>
             <input
               type="text"
               value={targetRegion}
               onChange={(e) => setTargetRegion(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Describe Your Target Region"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Audience
+              Describe Your Target Demographic
             </label>
             <input
               type="text"
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Describe Your Target Demographic"
               required
             />
           </div>
@@ -108,67 +169,169 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
               required
             />
           </div>
-        </div>
-      </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Products (minimum 2)</h3>
-          <button
-            type="button"
-            onClick={addProduct}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-          >
-            <Plus size={20} /> Add Product
-          </button>
-        </div>
+          {/* Campaign Options */}
+          <div className="pt-4 space-y-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="aiPromptAssist"
+                  checked={aiPromptAssist}
+                  onChange={(e) => setAiPromptAssist(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="aiPromptAssist" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  AI-Powered Prompt Assist
+                  <div className="relative group">
+                    <Info size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                      The Prompt Assist feature generates prompt suggestions to better target the described region and demographic.
+                    </div>
+                  </div>
+                </label>
+              </div>
 
-        <div className="space-y-4">
-          {products.map((product, index) => (
-            <div key={product.id} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <h4 className="font-medium text-gray-700">Product {index + 1}</h4>
-                {products.length > 2 && (
+              {/* Show Enhanced Message when available */}
+              {aiPromptAssist && enhancedMessage && (
+                <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles size={16} className="text-purple-600" />
+                    <h4 className="text-xs font-semibold text-purple-900">AI-Enhanced Message</h4>
+                  </div>
+                  <input
+                    readOnly
+                    value={enhancedMessage}
+                    className="w-full px-3 py-2 bg-white border border-purple-300 rounded font-medium text-gray-800 text-sm"
+                    onClick={(e) => e.currentTarget.select()}
+                  />
+                  <p className="mt-1 text-xs text-purple-700">
+                    This culturally optimized message will be used in your campaign.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="generateAnalytics"
+                checked={generateAnalytics}
+                onChange={(e) => setGenerateAnalytics(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="generateAnalytics" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                Generate Analytics Tracking Code
+                <div className="relative group">
+                  <Info size={16} className="text-gray-400 cursor-help" />
+                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                    Google Analytics tracking code can be auto-generated for the campaign.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Show GA Tracking Code when checkbox is checked */}
+            {generateAnalytics && (
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-semibold text-gray-700">Google Analytics Tracking Code</h4>
                   <button
                     type="button"
-                    onClick={() => removeProduct(product.id)}
-                    className="text-red-600 hover:text-red-800"
+                    onClick={copyToClipboard}
+                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
                   >
-                    <Trash2 size={20} />
+                    {copied ? (
+                      <>
+                        <Check size={14} />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        Copy Code
+                      </>
+                    )}
                   </button>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={product.name}
-                  onChange={(e) => updateProduct(product.id, 'name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Product name..."
-                  required
-                />
+                </div>
                 <textarea
-                  value={product.description}
-                  onChange={(e) => updateProduct(product.id, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Product description..."
-                  rows={2}
-                  required
+                  readOnly
+                  value={gaTrackingCode}
+                  className="w-full h-32 px-3 py-2 bg-white border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
+                  onClick={(e) => e.currentTarget.select()}
                 />
+                <p className="mt-2 text-xs text-gray-600">
+                  Paste this code in the <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> section of your website.
+                </p>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        </div>
+        </div>
+
+        {/* Right Column - Products */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Products (min 2)</h3>
+            <button
+              type="button"
+              onClick={addProduct}
+              className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+            >
+              <Plus size={16} /> Add
+            </button>
+          </div>
+
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {products.map((product, index) => (
+              <div key={product.id} className="border border-gray-200 rounded-lg p-3">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="text-sm font-medium text-gray-700">Product {index + 1}</h4>
+                  {products.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeProduct(product.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={product.name}
+                    onChange={(e) => updateProduct(product.id, 'name', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Product name..."
+                    required
+                  />
+                  <textarea
+                    value={product.description}
+                    onChange={(e) => updateProduct(product.id, 'description', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Product description..."
+                    rows={2}
+                    required
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isGenerating}
-        className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg"
-      >
-        {isGenerating ? 'Generating...' : 'Generate Campaign'}
-      </button>
+      {/* Generate Button - Full Width Below */}
+      <div className="mt-6">
+        <button
+          type="submit"
+          disabled={isGenerating || isEnhancing}
+          className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg"
+        >
+          {isEnhancing ? 'Enhancing Prompt...' : isGenerating ? 'Generating...' : 'Generate Campaign'}
+        </button>
+      </div>
     </form>
   );
 };

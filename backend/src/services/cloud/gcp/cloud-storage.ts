@@ -60,7 +60,6 @@ export class GCPCloudStorageService {
       if (this.useLocal) {
         const fullPath = path.join(this.localPath, filePath);
         const buffer = await fs.readFile(fullPath);
-        logger.info(`File read from local storage: ${fullPath}`);
         return buffer;
       } else {
         // GCP Cloud Storage implementation would go here

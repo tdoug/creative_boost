@@ -62,7 +62,6 @@ export class AzureBlobStorageService {
       if (this.useLocal) {
         const fullPath = path.join(this.localPath, filePath);
         const buffer = await fs.readFile(fullPath);
-        logger.info(`File read from local storage: ${fullPath}`);
         return buffer;
       } else {
         // Azure Blob Storage implementation would go here
