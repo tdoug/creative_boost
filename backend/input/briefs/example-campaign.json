@@ -16,8 +16,8 @@
   "targetAudience": "Health-conscious millennials aged 25-40",
   "message": "Elevate Your Daily Ritual",
   "locale": "en-US",
-  "aiPromptAssist": false,
+  "aiPromptAssist": true,
   "generateAnalytics": true,
   "useArtStyle": true,
-  "artStyle": "modern"
+  "artStyle": "photorealistic"
 }

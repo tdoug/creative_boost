@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Menu, X, Upload, Download, Trash2, FileText, Copy } from 'lucide-react';
+import { Menu, X, Upload, Download, Trash2, FileText, Copy, Save } from 'lucide-react';
 import { CampaignBrief } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -34,16 +34,28 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
 
       if (existing >= 0) {
         campaigns[existing] = brief;
+        toast.success('Campaign updated!');
       } else {
         campaigns.push(brief);
+        toast.success('Campaign saved!');
       }
 
       localStorage.setItem('savedCampaigns', JSON.stringify(campaigns));
-      toast.success('Campaign saved!');
     } catch (error) {
       console.error('Error saving campaign:', error);
       toast.error('Failed to save campaign');
     }
+  };
+
+  // Save current campaign
+  const handleSaveCurrent = () => {
+    if (!currentBrief) {
+      toast.error('No campaign to save');
+      return;
+    }
+
+    saveCampaign(currentBrief);
+    setIsOpen(false);
   };
 
   // Delete campaign from localStorage
@@ -178,6 +190,16 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
           <h2 className="text-2xl font-bold mb-6 text-gray-900">Campaign Menu</h2>
 
           <div className="space-y-4">
+            {/* Save Campaign */}
+            <button
+              onClick={handleSaveCurrent}
+              disabled={!currentBrief}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <Save size={20} />
+              <span>Save Campaign</span>
+            </button>
+
             {/* Import Campaign */}
             <button
               onClick={() => {
@@ -324,6 +346,26 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
                             <span>{campaign.targetRegion}</span>
                             <span>{campaign.targetAudience}</span>
                           </div>
+                          {/* Show optional features if enabled */}
+                          {(campaign.aiPromptAssist || campaign.generateAnalytics || campaign.useArtStyle) && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {campaign.aiPromptAssist && (
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                  AI Assist
+                                </span>
+                              )}
+                              {campaign.generateAnalytics && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  Analytics
+                                </span>
+                              )}
+                              {campaign.useArtStyle && campaign.artStyle && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                                  {campaign.artStyle}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <button

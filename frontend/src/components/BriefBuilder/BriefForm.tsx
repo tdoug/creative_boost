@@ -165,20 +165,20 @@ ${hotjarTrackingCode}`;
 
     let finalMessage = message;
 
-    // If AI Prompt Assist is enabled, enhance the message first
+    // If AI Message Assist is enabled, enhance the message first
     if (aiPromptAssist) {
       try {
         setIsEnhancing(true);
-        toast.loading('Enhancing prompt with AI...', { id: 'enhance' });
+        toast.loading('Enhancing message with AI...', { id: 'enhance' });
 
         const result = await campaignApi.enhancePrompt(message, targetRegion, targetAudience);
         finalMessage = result.enhancedMessage;
         setEnhancedMessage(finalMessage);
 
-        toast.success('Prompt enhanced!', { id: 'enhance' });
+        toast.success('Message enhanced!', { id: 'enhance' });
       } catch (error) {
-        console.error('Error enhancing prompt:', error);
-        toast.error('Failed to enhance prompt, using original', { id: 'enhance' });
+        console.error('Error enhancing message:', error);
+        toast.error('Failed to enhance message, using original', { id: 'enhance' });
         finalMessage = message;
       } finally {
         setIsEnhancing(false);
@@ -274,11 +274,11 @@ ${hotjarTrackingCode}`;
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="aiPromptAssist" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  AI-Powered Prompt Assist
+                  AI-Powered Message Assist
                   <div className="relative group">
                     <Info size={16} className="text-gray-400 cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                      The Prompt Assist feature generates prompt suggestions to better target the described region and demographic.
+                      The Message Assist feature generates message suggestions to better target the described region and demographic.
                     </div>
                   </div>
                 </label>
@@ -479,7 +479,7 @@ ${hotjarTrackingCode}`;
           disabled={isGenerating || isEnhancing}
           className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {isEnhancing ? 'Enhancing Prompt...' : isGenerating ? 'Generating...' : 'Generate Campaign'}
+          {isEnhancing ? 'Enhancing Message...' : isGenerating ? 'Generating...' : 'Generate Campaign'}
         </button>
       </div>
     </form>
