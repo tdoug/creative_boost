@@ -39,4 +39,5 @@ export interface ProgressEvent {
   progress?: number;
   asset?: GeneratedAsset;
   error?: string;
+  completed?: boolean;
 }

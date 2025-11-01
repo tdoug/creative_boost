@@ -33,7 +33,8 @@ export class S3StorageService {
         await fs.mkdir(dir, { recursive: true });
         await fs.writeFile(fullPath, fileBuffer);
         logger.info(`File saved locally: ${fullPath}`);
-        return fullPath;
+        // Return just the relative path, not the full path
+        return filePath;
       } else {
         const command = new PutObjectCommand({
           Bucket: this.bucket,

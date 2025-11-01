@@ -38,7 +38,8 @@ export class GCPCloudStorageService {
         await fs.mkdir(dir, { recursive: true });
         await fs.writeFile(fullPath, fileBuffer);
         logger.info(`File saved locally: ${fullPath}`);
-        return fullPath;
+        // Return just the relative path, not the full path
+        return filePath;
       } else {
         // GCP Cloud Storage implementation would go here
         // For now, fall back to local storage

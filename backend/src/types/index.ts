@@ -106,4 +106,5 @@ export interface ProgressEvent {
   progress?: number;
   asset?: GeneratedAsset;
   error?: string;
+  completed?: boolean; // For progress events, indicates if the task is done
 }

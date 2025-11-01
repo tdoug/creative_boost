@@ -9,14 +9,13 @@ interface GenerationProgressProps {
 }
 
 export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets }) => {
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'complete':
-        return <CheckCircle className="text-green-600" size={24} />;
-      case 'error':
-        return <XCircle className="text-red-600" size={24} />;
-      default:
-        return <Loader2 className="text-blue-600 animate-spin" size={24} />;
+  const getIcon = (event: ProgressEvent) => {
+    if (event.type === 'complete' || event.completed) {
+      return <CheckCircle className="text-green-600" size={24} />;
+    } else if (event.type === 'error') {
+      return <XCircle className="text-red-600" size={24} />;
+    } else {
+      return <Loader2 className="text-blue-600 animate-spin" size={24} />;
     }
   };
 
@@ -28,7 +27,7 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
         {events.map((event, index) => (
           <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded">
             <div className="flex-shrink-0 mt-1">
-              {getIcon(event.type)}
+              {getIcon(event)}
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-800">{event.message}</p>

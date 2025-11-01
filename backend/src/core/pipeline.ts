@@ -114,7 +114,8 @@ export class CreativePipeline {
                 productId: product.id,
                 aspectRatio: aspectRatio.label,
                 message: `Created ${aspectRatio.label} variant for ${product.name}`,
-                asset
+                asset,
+                completed: true
               });
 
               logger.info(`Successfully created ${aspectRatio.label} variant for ${product.name}`);
