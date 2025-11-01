@@ -134,7 +134,9 @@ export class CreativePipeline {
                   primary: brief.brandAssets.primaryColor,
                   secondary: brief.brandAssets.secondaryColor
                 } : undefined
-                // position, background, and font will be randomly selected
+                // position and font will be randomly selected
+                // text will be white or black with drop shadow
+                // background will use brand color if available
               });
 
               // Save to storage

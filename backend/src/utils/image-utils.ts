@@ -71,10 +71,9 @@ function getRandomBackgroundStyle(): { bg: string; color: string } {
 }
 
 /**
- * Determine if a color (hex) is dark or light
- * Returns true if the color is dark (needs light text)
+ * Calculate luminance of a color (0-255 scale)
  */
-function isColorDark(hexColor: string): boolean {
+function calculateLuminance(hexColor: string): number {
   // Remove # if present
   const hex = hexColor.replace('#', '');
 
@@ -85,10 +84,16 @@ function isColorDark(hexColor: string): boolean {
 
   // Calculate relative luminance (perceived brightness)
   // Using the formula: (0.299*R + 0.587*G + 0.114*B)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+  return (0.299 * r + 0.587 * g + 0.114 * b);
+}
 
+/**
+ * Determine if a color (hex) is dark or light
+ * Returns true if the color is dark (needs light text)
+ */
+function isColorDark(hexColor: string): boolean {
   // If luminance is less than 128 (midpoint of 0-255), it's dark
-  return luminance < 128;
+  return calculateLuminance(hexColor) < 128;
 }
 
 /**
@@ -137,8 +142,6 @@ export async function addTextOverlay(
     const {
       text,
       fontSize = 48,
-      fontColor = selectedBgStyle.color,      // Use color from background style
-      backgroundColor = selectedBgStyle.bg,   // Use background from style
       padding = 20,
       position = selectedPosition,
       logo,
@@ -146,32 +149,43 @@ export async function addTextOverlay(
       brandColors
     } = options;
 
-    // Apply brand colors if provided
-    let finalFontColor = fontColor;
-    let finalBackgroundColor = backgroundColor;
+    // Determine text and background colors
+    let finalFontColor: string;
+    let shadowColor: string;
+    let finalBackgroundColor: string;
 
-    if (brandColors?.primary || brandColors?.secondary) {
-      // Use primary color for background and ensure good contrast for text
-      if (brandColors.primary) {
-        finalBackgroundColor = brandColors.primary;
-        // Use secondary color for text if available, otherwise use high contrast
-        if (brandColors.secondary) {
-          finalFontColor = brandColors.secondary;
-        } else {
-          // Determine if primary is dark or light and choose contrasting text color
-          finalFontColor = isColorDark(brandColors.primary) ? '#FFFFFF' : '#000000';
-        }
-      } else if (brandColors.secondary) {
-        // Only secondary color provided
-        finalBackgroundColor = brandColors.secondary;
-        finalFontColor = isColorDark(brandColors.secondary) ? '#FFFFFF' : '#000000';
-      }
+    if (brandColors?.primary) {
+      // Use primary brand color for background
+      finalBackgroundColor = brandColors.primary;
 
-      logger.info(`Using brand colors - BG: ${finalBackgroundColor}, Text: ${finalFontColor}`);
+      // Determine text color based on background darkness
+      const isDark = isColorDark(brandColors.primary);
+      finalFontColor = isDark ? '#FFFFFF' : '#000000';
+      shadowColor = isDark ? '#000000' : '#FFFFFF';
+
+      logger.info(`Using brand color background: ${finalBackgroundColor}`);
+    } else if (brandColors?.secondary) {
+      // Use secondary brand color for background if primary not available
+      finalBackgroundColor = brandColors.secondary;
+
+      const isDark = isColorDark(brandColors.secondary);
+      finalFontColor = isDark ? '#FFFFFF' : '#000000';
+      shadowColor = isDark ? '#000000' : '#FFFFFF';
+
+      logger.info(`Using brand color background: ${finalBackgroundColor}`);
+    } else {
+      // No brand colors - use simple white or black text with semi-transparent background
+      const useWhiteText = Math.random() > 0.5;
+      finalFontColor = useWhiteText ? '#FFFFFF' : '#000000';
+      shadowColor = useWhiteText ? '#000000' : '#FFFFFF';
+
+      finalBackgroundColor = useWhiteText
+        ? 'rgba(0, 0, 0, 0.6)'   // Dark background for white text
+        : 'rgba(255, 255, 255, 0.85)'; // Light background for black text
     }
 
     const hasLogo = !!logo;
-    logger.info(`Adding text overlay: "${text}" | Font: ${selectedFont.split(',')[0]} | Position: ${position} | BG: ${finalBackgroundColor} | Logo: ${hasLogo ? logoPosition : 'none'}`);
+    logger.info(`Adding text overlay: "${text}" | Font: ${selectedFont.split(',')[0]} | Position: ${position} | BG: ${finalBackgroundColor} | Text: ${finalFontColor} with ${shadowColor} shadow | Logo: ${hasLogo ? logoPosition : 'none'}`);
 
     // Get image metadata
     const metadata = await sharp(imageBuffer).metadata();
@@ -192,18 +206,18 @@ export async function addTextOverlay(
       fontSize * 2.5 // Minimum box height to prevent cutoff
     );
 
-    // Position calculation
+    // Position calculation - ensure integer values
     let yPosition = 0;
     if (position === 'bottom') {
-      yPosition = imageHeight - boxHeight;
+      yPosition = Math.floor(imageHeight - boxHeight);
     } else if (position === 'center') {
       yPosition = Math.floor((imageHeight - boxHeight) / 2);
     } else if (position === 'top') {
       yPosition = 0;
     }
 
-    // Ensure yPosition is never negative
-    yPosition = Math.max(0, yPosition);
+    // Ensure yPosition is never negative and is an integer
+    yPosition = Math.max(0, Math.floor(yPosition));
 
     // Create SVG overlay with text wrapping
     // Split text into words and create wrapped lines
@@ -252,7 +266,7 @@ export async function addTextOverlay(
 
     // Calculate vertical centering for multiline text
     const totalTextHeight = lines.length * lineHeight;
-    const textStartY = yPosition + (boxHeight - totalTextHeight) / 2 + fontSize;
+    const textStartY = Math.floor(yPosition + (boxHeight - totalTextHeight) / 2 + fontSize);
 
     // Estimate text width (rough approximation)
     const longestLine = lines.reduce((a, b) => a.length > b.length ? a : b, '');
@@ -284,8 +298,8 @@ export async function addTextOverlay(
 
     // Create SVG with proper text wrapping
     const textElements = lines.map((line, index) => {
-      const y = textStartY + (index * lineHeight);
-      return `<text x="${textX}" y="${y}" class="text">${escapeXml(line)}</text>`;
+      const y = Math.floor(textStartY + (index * lineHeight));
+      return `<text x="${Math.floor(textX)}" y="${y}" class="text">${escapeXml(line)}</text>`;
     }).join('\n        ');
 
     const svg = `
@@ -299,6 +313,7 @@ export async function addTextOverlay(
               font-weight: 700;
               text-anchor: middle;
               letter-spacing: 0.02em;
+              filter: drop-shadow(2px 2px 4px ${shadowColor});
             }
           </style>
         </defs>
@@ -318,15 +333,16 @@ export async function addTextOverlay(
 
     // Add logo overlay if present
     if (hasLogo && logoBuffer) {
-      const logoY = yPosition + Math.floor((boxHeight - logoHeight) / 2);
+      const logoY = Math.floor(yPosition + (boxHeight - logoHeight) / 2);
+      const logoXInt = Math.floor(logoX);
 
       compositeLayers.push({
         input: logoBuffer,
         top: logoY,
-        left: logoX
+        left: logoXInt
       });
 
-      logger.info(`Logo positioned at x:${logoX}, y:${logoY} | Text at x:${textX}`);
+      logger.info(`Logo positioned at x:${logoXInt}, y:${logoY} | Text at x:${Math.floor(textX)}`);
     }
 
     const result = await sharp(imageBuffer)

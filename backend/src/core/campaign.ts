@@ -46,6 +46,62 @@ export function validateCampaignBrief(brief: any): CampaignBrief {
 }
 
 /**
+ * Convert hex color to descriptive color name for AI understanding
+ */
+function hexToColorName(hex: string): string {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '').toLowerCase();
+
+  // Convert to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+
+  // Determine hue and saturation
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const diff = max - min;
+
+  // Check for grayscale
+  if (diff < 30) {
+    if (max < 50) return 'black';
+    if (max < 100) return 'dark gray';
+    if (max < 150) return 'gray';
+    if (max < 200) return 'light gray';
+    return 'white';
+  }
+
+  // Determine base hue
+  let hue = '';
+  if (r > g && r > b) {
+    if (g > b + 30) hue = 'orange';
+    else if (b > g + 30) hue = 'magenta';
+    else hue = 'red';
+  } else if (g > r && g > b) {
+    if (r > b + 30) hue = 'yellow';
+    else if (b > r + 30) hue = 'cyan';
+    else hue = 'green';
+  } else if (b > r && b > g) {
+    if (r > g + 30) hue = 'purple';
+    else if (g > r + 30) hue = 'teal';
+    else hue = 'blue';
+  }
+
+  // Determine lightness/darkness
+  const lightness = (max + min) / 2;
+  const saturation = diff / max;
+
+  let modifier = '';
+  if (lightness < 80) modifier = 'dark ';
+  else if (lightness > 200) modifier = 'light ';
+
+  if (saturation < 0.3) modifier += 'muted ';
+  else if (saturation > 0.8) modifier += 'vibrant ';
+
+  return (modifier + hue).trim();
+}
+
+/**
  * Get style-specific prompt modifiers
  */
 function getStyleModifiers(style: string): string {
@@ -87,15 +143,18 @@ export function generateImagePrompt(
     ? getStyleModifiers(brief.artStyle)
     : 'photorealistic, ultra-sharp, 8k, professional grading';
 
-  // Build brand color elements string
+  // Build brand color elements string with descriptive color names
   let brandElements = '';
   if (brief.brandAssets) {
     const { primaryColor, secondaryColor } = brief.brandAssets;
 
     if (primaryColor && secondaryColor) {
-      brandElements += ` Use brand colors: ${primaryColor} as primary, ${secondaryColor} as accent.`;
+      const primaryName = hexToColorName(primaryColor);
+      const secondaryName = hexToColorName(secondaryColor);
+      brandElements += ` Dominant color scheme: ${primaryName} and ${secondaryName}. Product and background must feature ${primaryName} prominently with ${secondaryName} accents.`;
     } else if (primaryColor) {
-      brandElements += ` Use brand color: ${primaryColor}.`;
+      const primaryName = hexToColorName(primaryColor);
+      brandElements += ` Color scheme: ${primaryName}. Product and background must prominently feature ${primaryName}.`;
     }
   }
 
