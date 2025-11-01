@@ -35,7 +35,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
       setDownloadingAsset(asset.path);
 
       // Fetch the image as a blob
-      const url = assetsApi.getAssetUrl(asset.path);
+      const url = assetsApi.getAssetUrl(asset.path, false);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -106,8 +106,8 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
             <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-square bg-gray-100 cursor-pointer" onClick={() => setSelectedAsset(asset)}>
                 <img
-                  key={`${asset.path}-${Date.now()}`}
-                  src={assetsApi.getAssetUrl(asset.path)}
+                  key={asset.path}
+                  src={assetsApi.getAssetUrl(asset.path, false)}
                   alt={`${asset.productName} - ${asset.aspectRatio}`}
                   className="w-full h-full object-contain hover:opacity-90 transition-opacity"
                 />
@@ -149,7 +149,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
               <X size={32} />
             </button>
             <img
-              src={assetsApi.getAssetUrl(selectedAsset.path)}
+              src={assetsApi.getAssetUrl(selectedAsset.path, false)}
               alt={`${selectedAsset.productName} - ${selectedAsset.aspectRatio}`}
               className="max-w-full max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}

@@ -110,9 +110,11 @@ router.get('/file/*', async (req: Request, res: Response) => {
 
     // For local storage, serve directly from disk for better performance
     const storagePath = process.env.STORAGE_PATH || './output';
-    if (process.env.AWS_S3_BUCKET === 'local' ||
-        process.env.AZURE_STORAGE_CONTAINER === 'local' ||
-        process.env.GCP_BUCKET === 'local') {
+    const useLocal = !process.env.AWS_S3_BUCKET &&
+                     !process.env.AZURE_STORAGE_CONTAINER &&
+                     !process.env.GCP_BUCKET;
+
+    if (useLocal) {
       const fullPath = path.join(storagePath, filePath);
       res.sendFile(path.resolve(fullPath));
     } else {

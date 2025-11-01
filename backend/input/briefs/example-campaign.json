@@ -1,0 +1,23 @@
+{
+  "campaignId": "summer-launch-2025",
+  "products": [
+    {
+      "id": "prod-1",
+      "name": "Premium Coffee Blend",
+      "description": "Artisan roasted coffee beans with rich, smooth flavor profile"
+    },
+    {
+      "id": "prod-2",
+      "name": "Organic Green Tea",
+      "description": "Premium loose-leaf green tea, sustainably sourced from Japan"
+    }
+  ],
+  "targetRegion": "United States",
+  "targetAudience": "Health-conscious millennials aged 25-40",
+  "message": "Elevate Your Daily Ritual",
+  "locale": "en-US",
+  "aiPromptAssist": false,
+  "generateAnalytics": true,
+  "useArtStyle": true,
+  "artStyle": "modern"
+}

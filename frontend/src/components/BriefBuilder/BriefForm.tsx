@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Info, Copy, Check, Sparkles } from 'lucide-react';
 import { CampaignBrief, Product } from '../../types';
 import toast from 'react-hot-toast';
@@ -7,9 +7,12 @@ import { campaignApi } from '../../services/api';
 interface BriefFormProps {
   onSubmit: (brief: CampaignBrief) => void;
   isGenerating: boolean;
+  loadedBrief?: CampaignBrief | null;
+  onBriefLoaded?: () => void;
+  onFormChange?: (brief: CampaignBrief) => void;
 }
 
-export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) => {
+export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, loadedBrief, onBriefLoaded, onFormChange }) => {
   const [campaignId, setCampaignId] = useState(`campaign-${Date.now()}`);
   const [targetRegion, setTargetRegion] = useState('United States');
   const [targetAudience, setTargetAudience] = useState('Young professionals aged 25-35');
@@ -45,7 +48,46 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
     { id: 'prod-2', name: 'Organic Green Tea', description: 'Premium loose-leaf green tea, sustainably sourced' }
   ]);
 
+  // Load campaign from imported brief
+  useEffect(() => {
+    if (loadedBrief) {
+      setCampaignId(loadedBrief.campaignId);
+      setTargetRegion(loadedBrief.targetRegion);
+      setTargetAudience(loadedBrief.targetAudience);
+      setMessage(loadedBrief.message);
+      setProducts(loadedBrief.products);
+      setAiPromptAssist(loadedBrief.aiPromptAssist || false);
+      setGenerateAnalytics(loadedBrief.generateAnalytics || false);
+      setUseArtStyle(loadedBrief.useArtStyle || false);
+      setArtStyle(loadedBrief.artStyle || 'photorealistic');
+
+      toast.success('Campaign loaded into form!');
+      onBriefLoaded?.();
+    }
+  }, [loadedBrief, onBriefLoaded]);
+
+  // Notify parent of form changes (debounced to avoid performance issues)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const currentBrief: CampaignBrief = {
+        campaignId,
+        products,
+        targetRegion,
+        targetAudience,
+        message,
+        aiPromptAssist,
+        generateAnalytics,
+        useArtStyle,
+        artStyle: useArtStyle ? artStyle : undefined
+      };
+      onFormChange?.(currentBrief);
+    }, 300); // Wait 300ms after last change before notifying parent
+
+    return () => clearTimeout(timeoutId);
+  }, [campaignId, products, targetRegion, targetAudience, message, aiPromptAssist, generateAnalytics, useArtStyle, artStyle, onFormChange]);
+
   const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX';
+  const hotjarSiteId = import.meta.env.VITE_HOTJAR_SITE_ID || '1234567';
 
   const gaTrackingCode = `<!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
@@ -58,6 +100,22 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
     'campaign_name': '${message}'
   });
 </script>`;
+
+  const hotjarTrackingCode = `<!-- Hotjar Tracking Code -->
+<script>
+  (function(h,o,t,j,a,r){
+    h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+    h._hjSettings={hjid:${hotjarSiteId},hjsv:6};
+    a=o.getElementsByTagName('head')[0];
+    r=o.createElement('script');r.async=1;
+    r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+    a.appendChild(r);
+  })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+</script>`;
+
+  const combinedTrackingCode = `${gaTrackingCode}
+
+${hotjarTrackingCode}`;
 
   const addProduct = () => {
     const newProduct: Product = {
@@ -82,9 +140,9 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(gaTrackingCode);
+      await navigator.clipboard.writeText(combinedTrackingCode);
       setCopied(true);
-      toast.success('Tracking code copied to clipboard!');
+      toast.success('Tracking codes copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error('Failed to copy code');
@@ -322,11 +380,11 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
               )}
             </div>
 
-            {/* Show GA Tracking Code when checkbox is checked */}
+            {/* Show Analytics Tracking Code when checkbox is checked */}
             {generateAnalytics && (
               <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">Google Analytics Tracking Code</h4>
+                  <h4 className="text-sm font-semibold text-gray-700">Analytics Tracking Code (GA4 + Hotjar)</h4>
                   <button
                     type="button"
                     onClick={copyToClipboard}
@@ -347,12 +405,13 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating }) 
                 </div>
                 <textarea
                   readOnly
-                  value={gaTrackingCode}
-                  className="w-full h-32 px-3 py-2 bg-white border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
+                  value={combinedTrackingCode}
+                  className="w-full h-48 px-3 py-2 bg-white border border-gray-300 rounded font-mono text-xs text-gray-800 resize-none"
                   onClick={(e) => e.currentTarget.select()}
                 />
                 <p className="mt-2 text-xs text-gray-600">
                   Paste this code in the <code className="px-1 py-0.5 bg-gray-200 rounded">&lt;head&gt;</code> section of your website.
+                  Includes both Google Analytics 4 and Hotjar tracking.
                 </p>
               </div>
             )}

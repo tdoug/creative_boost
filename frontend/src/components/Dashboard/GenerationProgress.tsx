@@ -85,8 +85,8 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
               {event.asset && (
                 <div className="cursor-pointer" onClick={() => setSelectedAsset(event.asset!)}>
                   <img
-                    key={`${event.asset.path}-${Date.now()}`}
-                    src={assetsApi.getAssetUrl(event.asset.path)}
+                    key={event.asset.path}
+                    src={assetsApi.getAssetUrl(event.asset.path, false)}
                     alt={`${event.asset.productName} - ${event.asset.aspectRatio}`}
                     className="w-full aspect-square object-cover rounded border border-gray-200 hover:opacity-90 transition-opacity"
                   />
@@ -112,7 +112,7 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
               <X size={32} />
             </button>
             <img
-              src={assetsApi.getAssetUrl(selectedAsset.path)}
+              src={assetsApi.getAssetUrl(selectedAsset.path, false)}
               alt={`${selectedAsset.productName} - ${selectedAsset.aspectRatio}`}
               className="max-w-full max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}

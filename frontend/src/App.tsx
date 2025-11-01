@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BriefForm } from './components/BriefBuilder/BriefForm';
 import { GenerationProgress } from './components/Dashboard/GenerationProgress';
 import { AssetGrid } from './components/Gallery/AssetGrid';
+import { HamburgerMenu } from './components/Menu/HamburgerMenu';
 import { CampaignBrief, ProgressEvent, GeneratedAsset } from './types';
 import { campaignApi, createWebSocket, assetsApi } from './services/api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -12,6 +13,8 @@ function App() {
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [assets, setAssets] = useState<GeneratedAsset[]>([]);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
+  const [currentBrief, setCurrentBrief] = useState<CampaignBrief | null>(null);
+  const [loadedBrief, setLoadedBrief] = useState<CampaignBrief | null>(null);
   const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const galleryRef = useRef<HTMLDivElement>(null);
 
@@ -87,6 +90,7 @@ function App() {
     try {
       setIsGenerating(true);
       setCurrentCampaignId(brief.campaignId);
+      setCurrentBrief(brief);
       setEvents([]); // Clear previous events
 
       // Don't clear assets - we want to keep existing ones visible
@@ -103,6 +107,15 @@ function App() {
     }
   };
 
+  const handleLoadCampaign = (brief: CampaignBrief) => {
+    setLoadedBrief(brief);
+    setCurrentBrief(brief);
+  };
+
+  const handleFormChange = (brief: CampaignBrief) => {
+    setCurrentBrief(brief);
+  };
+
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -110,6 +123,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
+      <HamburgerMenu currentBrief={currentBrief} onLoadCampaign={handleLoadCampaign} />
 
       {/* Header */}
       <header className="bg-white shadow-sm">
@@ -137,7 +151,13 @@ function App() {
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Brief Builder - Full Width */}
         <div className="mb-8">
-          <BriefForm onSubmit={handleGenerateCampaign} isGenerating={isGenerating} />
+          <BriefForm
+            onSubmit={handleGenerateCampaign}
+            isGenerating={isGenerating}
+            loadedBrief={loadedBrief}
+            onBriefLoaded={() => setLoadedBrief(null)}
+            onFormChange={handleFormChange}
+          />
         </div>
 
         {/* Progress - Show when generating or when there are events to display */}

@@ -70,7 +70,7 @@ server.listen(PORT, () => {
   logger.info(`🚀 Server running on http://localhost:${PORT}`);
   logger.info(`📡 WebSocket available at ws://localhost:${PORT}/ws`);
   logger.info(`☁️  Cloud Provider: ${config.cloudProvider.toUpperCase()}`);
-  logger.info(`💾 Storage: ${config.aws.s3Bucket === 'local' ? 'Local filesystem' : `S3 (${config.aws.s3Bucket})`}`);
+  logger.info(`💾 Storage: ${!config.aws.s3Bucket ? 'Local filesystem' : `S3 (${config.aws.s3Bucket})`}`);
 });
 
 export default app;
