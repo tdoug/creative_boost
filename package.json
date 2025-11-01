@@ -12,7 +12,11 @@
     "watch:backend": "cd backend && npm run watch",
     "watch:frontend": "cd frontend && npm run watch",
     "build": "cd backend && npm run build && cd ../frontend && npm run build",
-    "cli": "cd backend && npm run cli --"
+    "cli": "cd backend && npm run cli --",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test run",
+    "test:watch": "concurrently -n \"backend,frontend\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run test:backend\" \"cd frontend && npm test\""
   },
   "keywords": [
     "creative-automation",
