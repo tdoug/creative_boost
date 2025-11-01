@@ -1,0 +1,19 @@
+{
+  "campaignId": "summer-2024-launch",
+  "products": [
+    {
+      "id": "prod-sunscreen-50",
+      "name": "Ultra Sport Sunscreen SPF 50",
+      "description": "Water-resistant sunscreen for active outdoor enthusiasts, broad-spectrum UV protection, non-greasy formula"
+    },
+    {
+      "id": "prod-beach-towel",
+      "name": "Premium Microfiber Beach Towel",
+      "description": "Quick-dry, sand-resistant beach towel with vibrant tropical patterns, ultra-soft and compact"
+    }
+  ],
+  "targetRegion": "United States - Coastal States",
+  "targetAudience": "Active families and outdoor enthusiasts aged 25-45",
+  "message": "Your Perfect Summer Awaits",
+  "locale": "en-US"
+}

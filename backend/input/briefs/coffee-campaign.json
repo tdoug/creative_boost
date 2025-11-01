@@ -1,0 +1,24 @@
+{
+  "campaignId": "coffee-lovers-fall-2024",
+  "products": [
+    {
+      "id": "prod-premium-blend",
+      "name": "Premium Coffee Blend",
+      "description": "Artisan roasted coffee beans with rich chocolate notes and smooth finish, ethically sourced from Colombia"
+    },
+    {
+      "id": "prod-espresso-dark",
+      "name": "Dark Espresso Roast",
+      "description": "Bold and intense dark roast espresso beans, perfect for morning energy, small-batch roasted"
+    }
+  ],
+  "targetRegion": "Urban United States",
+  "targetAudience": "Coffee enthusiasts and professionals aged 25-40",
+  "message": "Fuel Your Passion",
+  "locale": "en-US",
+  "brandGuidelines": {
+    "logoRequired": true,
+    "brandColors": ["#2C1810", "#8B4513", "#D2691E"],
+    "prohibitedWords": ["cheap", "instant"]
+  }
+}

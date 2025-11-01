@@ -1,0 +1,29 @@
+{
+  "name": "creative-boost",
+  "version": "1.0.0",
+  "description": "AI-Powered Creative Automation Pipeline for Social Campaigns",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "watch": "concurrently -n \"backend,frontend\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run watch:backend\" \"npm run watch:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "watch:backend": "cd backend && npm run watch",
+    "watch:frontend": "cd frontend && npm run watch",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "cli": "cd backend && npm run cli --"
+  },
+  "keywords": [
+    "creative-automation",
+    "genai",
+    "aws-bedrock",
+    "campaign-generation",
+    "social-media"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
