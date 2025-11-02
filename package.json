@@ -4,7 +4,7 @@
   "description": "AI-Powered Creative Automation Pipeline for Social Campaigns",
   "private": true,
   "scripts": {
-    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "watch": "concurrently -n \"backend,frontend\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run watch:backend\" \"npm run watch:frontend\"",
     "dev:backend": "cd backend && npm run dev",
