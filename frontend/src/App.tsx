@@ -197,7 +197,7 @@ function App() {
         {/* Progress - Show when generating or when there are events to display */}
         {(isGenerating || events.length > 0) && (
           <div className="mb-8">
-            <GenerationProgress events={events} assets={assets} isGenerating={isGenerating} />
+            <GenerationProgress events={events} assets={assets} isGenerating={isGenerating} currentBrief={currentBrief} />
           </div>
         )}
 

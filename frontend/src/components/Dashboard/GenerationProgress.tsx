@@ -1,16 +1,49 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, Loader2, X } from 'lucide-react';
-import { ProgressEvent, GeneratedAsset } from '../../types';
+import { CheckCircle, XCircle, Loader2, X, FileDown } from 'lucide-react';
+import { ProgressEvent, GeneratedAsset, CampaignBrief } from '../../types';
 import { assetsApi } from '../../services/api';
+import { generateCampaignReport } from '../../utils/pdfReport';
+import toast from 'react-hot-toast';
 
 interface GenerationProgressProps {
   events: ProgressEvent[];
   assets: GeneratedAsset[];
   isGenerating: boolean;
+  currentBrief: CampaignBrief | null;
 }
 
-export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets, isGenerating }) => {
+export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets, isGenerating, currentBrief }) => {
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const handleDownloadReport = async () => {
+    if (!currentBrief) {
+      toast.error('No campaign data available');
+      return;
+    }
+
+    try {
+      setIsGeneratingPdf(true);
+      toast.loading('Generating PDF report...', { id: 'pdf' });
+
+      // Filter assets for this campaign
+      const campaignAssets = assets.filter(asset =>
+        events.some(e => e.asset?.path === asset.path)
+      );
+
+      await generateCampaignReport(currentBrief, events, campaignAssets);
+
+      toast.success('Report downloaded successfully!', { id: 'pdf' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate report', { id: 'pdf' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Check if generation is complete (has a complete event and not currently generating)
+  const isComplete = !isGenerating && events.some(e => e.type === 'complete');
   const getIcon = (event: ProgressEvent) => {
     if (event.type === 'complete' || event.completed) {
       return <CheckCircle className="text-green-600" size={24} />;
@@ -59,7 +92,19 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
   return (
     <>
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-6">Generation Progress</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Generation Progress</h2>
+          {isComplete && currentBrief && (
+            <button
+              onClick={handleDownloadReport}
+              disabled={isGeneratingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <FileDown size={20} />
+              {isGeneratingPdf ? 'Generating Report...' : 'Download Campaign Report'}
+            </button>
+          )}
+        </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4">
           {uniqueEvents.length === 0 && isGenerating ? (
