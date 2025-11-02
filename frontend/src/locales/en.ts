@@ -56,6 +56,8 @@ export default {
       product: 'Product',
       ratio: 'Ratio',
       message: 'Message',
+      downloadReport: 'Download Campaign Report',
+      generatingReport: 'Generating Report...',
     },
     gallery: {
       title: 'Asset Gallery',
@@ -65,6 +67,8 @@ export default {
       products: 'products',
       loading: 'Loading assets...',
       filterAll: 'All',
+      checkCompliance: 'Check Brand Compliance',
+      checking: 'Checking...',
     },
     import: {
       title: 'Import Campaign',
@@ -101,6 +105,12 @@ export default {
       generationFailed: 'Campaign generation failed',
       connectionError: 'Connection error',
       failedToStart: 'Failed to start campaign generation',
+      checkingCompliance: 'Checking brand compliance...',
+      complianceCheckFailed: 'Failed to check brand compliance. Please try again.',
+      reportDownloaded: 'Report downloaded successfully!',
+      reportFailed: 'Failed to generate report',
+      generatingPdf: 'Generating PDF report...',
+      noCampaignData: 'No campaign data available',
     },
     language: {
       english: 'English',

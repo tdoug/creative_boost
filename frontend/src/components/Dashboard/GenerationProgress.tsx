@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, XCircle, Loader2, X, FileDown } from 'lucide-react';
 import { ProgressEvent, GeneratedAsset, CampaignBrief } from '../../types';
 import { assetsApi } from '../../services/api';
@@ -13,18 +14,19 @@ interface GenerationProgressProps {
 }
 
 export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, assets, isGenerating, currentBrief }) => {
+  const { t } = useTranslation();
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handleDownloadReport = async () => {
     if (!currentBrief) {
-      toast.error('No campaign data available');
+      toast.error(t('toast.noCampaignData'));
       return;
     }
 
     try {
       setIsGeneratingPdf(true);
-      toast.loading('Generating PDF report...', { id: 'pdf' });
+      toast.loading(t('toast.generatingPdf'), { id: 'pdf' });
 
       // Filter assets for this campaign
       const campaignAssets = assets.filter(asset =>
@@ -33,10 +35,10 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
 
       await generateCampaignReport(currentBrief, events, campaignAssets);
 
-      toast.success('Report downloaded successfully!', { id: 'pdf' });
+      toast.success(t('toast.reportDownloaded'), { id: 'pdf' });
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Failed to generate report', { id: 'pdf' });
+      toast.error(t('toast.reportFailed'), { id: 'pdf' });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -101,7 +103,7 @@ export const GenerationProgress: React.FC<GenerationProgressProps> = ({ events, 
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               <FileDown size={20} />
-              {isGeneratingPdf ? 'Generating Report...' : 'Download Campaign Report'}
+              {isGeneratingPdf ? t('progress.generatingReport') : t('progress.downloadReport')}
             </button>
           )}
         </div>

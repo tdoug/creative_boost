@@ -56,6 +56,8 @@ export default {
       product: '产品',
       ratio: '比例',
       message: '信息',
+      downloadReport: '下载营销活动报告',
+      generatingReport: '生成报告中...',
     },
     gallery: {
       title: '素材图库',
@@ -65,6 +67,8 @@ export default {
       products: '产品',
       loading: '正在加载素材...',
       filterAll: '全部',
+      checkCompliance: '检查品牌合规性',
+      checking: '检查中...',
     },
     import: {
       title: '导入营销活动',
@@ -101,6 +105,12 @@ export default {
       generationFailed: '营销活动生成失败',
       connectionError: '连接错误',
       failedToStart: '无法开始营销活动生成',
+      checkingCompliance: '正在检查品牌合规性...',
+      complianceCheckFailed: '检查品牌合规性失败。请重试。',
+      reportDownloaded: '报告下载成功！',
+      reportFailed: '生成报告失败',
+      generatingPdf: '正在生成PDF报告...',
+      noCampaignData: '没有可用的营销活动数据',
     },
     language: {
       english: 'English',

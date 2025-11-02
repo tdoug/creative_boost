@@ -56,6 +56,8 @@ export default {
       product: 'उत्पाद',
       ratio: 'अनुपात',
       message: 'संदेश',
+      downloadReport: 'अभियान रिपोर्ट डाउनलोड करें',
+      generatingReport: 'रिपोर्ट बनाई जा रही है...',
     },
     gallery: {
       title: 'एसेट गैलरी',
@@ -65,6 +67,8 @@ export default {
       products: 'उत्पाद',
       loading: 'एसेट लोड हो रहे हैं...',
       filterAll: 'सभी',
+      checkCompliance: 'ब्रांड अनुपालन जांचें',
+      checking: 'जांच हो रही है...',
     },
     import: {
       title: 'अभियान आयात करें',
@@ -101,6 +105,12 @@ export default {
       generationFailed: 'अभियान निर्माण विफल',
       connectionError: 'कनेक्शन त्रुटि',
       failedToStart: 'अभियान निर्माण शुरू करने में विफल',
+      checkingCompliance: 'ब्रांड अनुपालन जांचा जा रहा है...',
+      complianceCheckFailed: 'ब्रांड अनुपालन जांचने में विफल। कृपया पुन: प्रयास करें।',
+      reportDownloaded: 'रिपोर्ट सफलतापूर्वक डाउनलोड की गई!',
+      reportFailed: 'रिपोर्ट बनाने में विफल',
+      generatingPdf: 'PDF रिपोर्ट बनाई जा रही है...',
+      noCampaignData: 'कोई अभियान डेटा उपलब्ध नहीं',
     },
     language: {
       english: 'English',

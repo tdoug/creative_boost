@@ -74,7 +74,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets, brandAssets }) => 
 
     try {
       setCheckingCompliance(asset.path);
-      toast.loading('Checking brand compliance...', { id: 'compliance' });
+      toast.loading(t('toast.checkingCompliance'), { id: 'compliance' });
 
       const result = await complianceApi.checkBrandCompliance(asset.path, {
         logo: brandAssets.logo,
@@ -89,7 +89,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets, brandAssets }) => 
       }
     } catch (error) {
       console.error('Error checking compliance:', error);
-      toast.error('Failed to check brand compliance. Please try again.', { id: 'compliance' });
+      toast.error(t('toast.complianceCheckFailed'), { id: 'compliance' });
     } finally {
       setCheckingCompliance(null);
     }
@@ -163,7 +163,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets, brandAssets }) => 
                     className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm transition-colors"
                   >
                     <ShieldCheck size={16} className={checkingCompliance === asset.path ? 'animate-pulse' : ''} />
-                    {checkingCompliance === asset.path ? 'Checking...' : 'Check Brand Compliance'}
+                    {checkingCompliance === asset.path ? t('gallery.checking') : t('gallery.checkCompliance')}
                   </button>
                 )}
               </div>
