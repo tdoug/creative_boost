@@ -24,10 +24,11 @@ This project automates the creation of social media ad creatives by:
 - **Real-time Progress** - WebSocket-based progress updates during generation
 
 ### React Web UI
-- **Campaign Brief Builder** - Interactive form to create campaigns
+- **Campaign Brief Builder** - Interactive form to create campaigns with brand asset support (logos, colors)
 - **AI-Powered Message Enhancement** - Automatically optimize messages for target demographics
-- **Generation Dashboard** - Real-time progress tracking with live previews
+- **Generation Dashboard** - Real-time progress tracking with live previews and PDF report generation
 - **Asset Gallery** - Browse, filter, and download generated assets
+- **Brand Compliance Checking** - AI-powered verification that generated images include brand logos and colors
 - **Campaign Management** - Save, load, and manage multiple campaigns
 - **Persistent Storage** - All generated assets are saved and viewable across sessions
 
@@ -330,8 +331,16 @@ aws batch submit-job \
    - View all generated assets in the gallery below
    - Assets persist across sessions
    - Download individual images directly from the gallery
+   - Download a comprehensive PDF campaign report with all settings and generated images
 
-6. **Manage Campaigns**:
+6. **Brand Compliance Checking** (if brand assets are configured):
+   - Click "Check Brand Compliance" on any generated image
+   - AI analyzes the image to verify:
+     - Brand logo presence (if logo was uploaded)
+     - Brand color usage (if colors were specified)
+   - Receive instant feedback on compliance status
+
+7. **Manage Campaigns**:
    - Use the hamburger menu (☰) to save campaigns
    - Load previously saved campaigns
    - Reuse campaign configurations
@@ -472,6 +481,7 @@ POST   /api/campaigns/enhance-prompt    # AI-enhance campaign message
 GET    /api/assets                      # List all assets
 GET    /api/assets/:campaignId          # List assets for specific campaign
 GET    /api/assets/file/*               # Download/serve asset file
+POST   /api/compliance/check            # Check brand compliance of an asset
 ```
 
 **WebSocket** endpoint for real-time progress:
@@ -495,6 +505,18 @@ curl -X POST http://localhost:3000/api/campaigns/enhance-prompt \
 curl -X POST http://localhost:3000/api/campaigns/generate \
   -H "Content-Type: application/json" \
   -d @backend/input/briefs/summer-campaign.json
+
+# Check brand compliance of an asset
+curl -X POST http://localhost:3000/api/compliance/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "imagePath": "campaign-123/product-1/1:1_1234567890.png",
+    "brandAssets": {
+      "logo": "logos/campaign-123-logo.png",
+      "primaryColor": "#FF5733",
+      "secondaryColor": "#33FF57"
+    }
+  }'
 ```
 
 
@@ -616,13 +638,14 @@ Savings: 84% ($504/year)
 
 ## Development Roadmap
 
-- [ ] Brand compliance checks (logo detection, color validation)
+- [x] Brand compliance checks (logo detection, color validation) - **Completed**
+- [x] PDF campaign report generation - **Completed**
+- [x] Multi-language support (English, Hindi, Mandarin) - **Completed**
 - [ ] Legal content validation (prohibited words)
 - [ ] Performance analytics and reporting
 - [ ] Batch campaign processing
 - [ ] Template library
 - [ ] A/B testing support
-- [ ] Multi-language support
 - [ ] Video creative generation
 
 ## Contributing
