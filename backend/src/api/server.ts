@@ -4,6 +4,7 @@ import { WebSocketServer } from 'ws';
 import http from 'http';
 import campaignRoutes, { setWebSocket, removeWebSocket } from './routes/campaigns';
 import assetsRoutes from './routes/assets';
+import complianceRoutes from './routes/compliance';
 import { config } from '../utils/config';
 import { logger } from '../utils/logger';
 
@@ -26,6 +27,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

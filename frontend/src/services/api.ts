@@ -88,6 +88,22 @@ export const assetsApi = {
   }
 };
 
+export const complianceApi = {
+  async checkBrandCompliance(imagePath: string, brandAssets: { logo?: string; primaryColor?: string; secondaryColor?: string }): Promise<{
+    compliant: boolean;
+    logoPresent: boolean | null;
+    colorsPresent: boolean | null;
+    details: string;
+    checks: string[];
+  }> {
+    const response = await api.post('/api/compliance/check', {
+      imagePath,
+      brandAssets
+    });
+    return response.data;
+  }
+};
+
 export function createWebSocket(campaignId: string): WebSocket {
   const wsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
   return new WebSocket(`${wsUrl}/ws?campaignId=${campaignId}`);

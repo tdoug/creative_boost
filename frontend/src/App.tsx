@@ -203,7 +203,7 @@ function App() {
 
         {/* Asset Gallery - Full Width */}
         <div ref={galleryRef} className="mt-8">
-          <AssetGrid assets={assets} />
+          <AssetGrid assets={assets} brandAssets={currentBrief?.brandAssets} />
         </div>
       </main>
     </div>

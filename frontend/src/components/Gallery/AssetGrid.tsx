@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Filter, X } from 'lucide-react';
-import { GeneratedAsset } from '../../types';
-import { assetsApi } from '../../services/api';
+import { Download, Filter, X, ShieldCheck } from 'lucide-react';
+import { GeneratedAsset, BrandAssets } from '../../types';
+import { assetsApi, complianceApi } from '../../services/api';
 import toast from 'react-hot-toast';
 
 interface AssetGridProps {
   assets: GeneratedAsset[];
+  brandAssets?: BrandAssets;
 }
 
-export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
+export const AssetGrid: React.FC<AssetGridProps> = ({ assets, brandAssets }) => {
   const { t } = useTranslation();
   const [filterRatio, setFilterRatio] = useState<string>('all');
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null);
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null);
+  const [checkingCompliance, setCheckingCompliance] = useState<string | null>(null);
 
   // Extract timestamp from asset path for sorting
   const getAssetTimestamp = (asset: GeneratedAsset): number => {
@@ -64,6 +66,32 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
       toast.error('Failed to download asset. Please try again.');
     } finally {
       setDownloadingAsset(null);
+    }
+  };
+
+  const handleCheckCompliance = async (asset: GeneratedAsset) => {
+    if (!brandAssets) return;
+
+    try {
+      setCheckingCompliance(asset.path);
+      toast.loading('Checking brand compliance...', { id: 'compliance' });
+
+      const result = await complianceApi.checkBrandCompliance(asset.path, {
+        logo: brandAssets.logo,
+        primaryColor: brandAssets.primaryColor,
+        secondaryColor: brandAssets.secondaryColor
+      });
+
+      if (result.compliant) {
+        toast.success(`✓ Brand compliant: ${result.details}`, { id: 'compliance', duration: 5000 });
+      } else {
+        toast.error(`✗ Brand compliance issue: ${result.details}`, { id: 'compliance', duration: 5000 });
+      }
+    } catch (error) {
+      console.error('Error checking compliance:', error);
+      toast.error('Failed to check brand compliance. Please try again.', { id: 'compliance' });
+    } finally {
+      setCheckingCompliance(null);
     }
   };
 
@@ -128,6 +156,16 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets }) => {
                   <Download size={16} className={downloadingAsset === asset.path ? 'animate-bounce' : ''} />
                   {downloadingAsset === asset.path ? t('gallery.loading') : t('gallery.download')}
                 </button>
+                {brandAssets && (brandAssets.logo || brandAssets.primaryColor || brandAssets.secondaryColor) && (
+                  <button
+                    onClick={() => handleCheckCompliance(asset)}
+                    disabled={checkingCompliance === asset.path}
+                    className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm transition-colors"
+                  >
+                    <ShieldCheck size={16} className={checkingCompliance === asset.path ? 'animate-pulse' : ''} />
+                    {checkingCompliance === asset.path ? 'Checking...' : 'Check Brand Compliance'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
