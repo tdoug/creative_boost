@@ -1,5 +1,6 @@
 import { CampaignBrief, CampaignBriefSchema } from '../types';
 import { logger } from '../utils/logger';
+import { sanitizeCampaignBrief, validateNoScriptInjection } from '../utils/sanitize';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -38,7 +39,28 @@ export async function loadCampaignBrief(filePath: string): Promise<CampaignBrief
  */
 export function validateCampaignBrief(brief: any): CampaignBrief {
   try {
-    return CampaignBriefSchema.parse(brief);
+    // Check for script injection attempts in critical fields
+    const fieldsToCheck = [
+      brief.message,
+      brief.targetRegion,
+      brief.targetAudience,
+      ...(brief.products?.map((p: any) => p.name) || []),
+      ...(brief.products?.map((p: any) => p.description) || [])
+    ];
+
+    for (const field of fieldsToCheck) {
+      if (field && !validateNoScriptInjection(field)) {
+        throw new Error('Potentially malicious content detected in campaign brief');
+      }
+    }
+
+    // Validate schema
+    const validated = CampaignBriefSchema.parse(brief);
+
+    // Sanitize text fields to prevent XSS
+    const sanitized = sanitizeCampaignBrief(validated);
+
+    return sanitized;
   } catch (error) {
     logger.error('Campaign brief validation failed:', error);
     throw new Error(`Invalid campaign brief: ${error}`);

@@ -7,14 +7,37 @@ import assetsRoutes from './routes/assets';
 import complianceRoutes from './routes/compliance';
 import { config } from '../utils/config';
 import { logger } from '../utils/logger';
+import { generalLimiter } from './middleware/rate-limiter';
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
 
 // Request logging (skip asset file requests to reduce log noise)
 app.use((req, res, next) => {
@@ -57,12 +80,16 @@ wss.on('connection', (ws, req) => {
   }
 });
 
-// Error handling
+// Error handling - sanitized to prevent information leakage
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    details: err.message
+
+  // Don't expose detailed error messages in production
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+    ...(isProduction ? {} : { details: err.stack })
   });
 });
 

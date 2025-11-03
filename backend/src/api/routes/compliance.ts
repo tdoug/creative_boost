@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createCloudProviderFromEnv } from '../../services/cloud';
 import { logger } from '../../utils/logger';
+import { aiLimiter } from '../middleware/rate-limiter';
 
 const router = Router();
 const cloudProvider = createCloudProviderFromEnv();
@@ -18,7 +19,7 @@ interface BrandComplianceRequest {
  * POST /api/compliance/check
  * Check if an image complies with brand guidelines
  */
-router.post('/check', async (req: Request, res: Response) => {
+router.post('/check', aiLimiter, async (req: Request, res: Response) => {
   try {
     const { imagePath, brandAssets } = req.body as BrandComplianceRequest;
 
@@ -78,8 +79,7 @@ router.post('/check', async (req: Request, res: Response) => {
     } catch (parseError) {
       logger.error('Failed to parse compliance result:', parseError);
       return res.status(500).json({
-        error: 'Failed to parse compliance analysis',
-        rawResponse: analysis
+        error: 'Failed to parse compliance analysis'
       });
     }
 
@@ -96,8 +96,7 @@ router.post('/check', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error checking brand compliance:', error);
     res.status(500).json({
-      error: 'Failed to check brand compliance',
-      details: String(error)
+      error: 'Failed to check brand compliance'
     });
   }
 });

@@ -6,6 +6,8 @@ import { logger } from '../../utils/logger';
 import { CampaignBrief, ProgressEvent } from '../../types';
 import { WebSocket } from 'ws';
 import { createCloudProviderFromEnv } from '../../services/cloud';
+import { generationLimiter, aiLimiter } from '../middleware/rate-limiter';
+import { validateUploadedFile } from '../../utils/file-validator';
 
 const router = Router();
 
@@ -40,7 +42,7 @@ export function removeWebSocket(campaignId: string) {
  * POST /api/campaigns/enhance-prompt
  * Use AI to enhance campaign message for better targeting
  */
-router.post('/enhance-prompt', async (req: Request, res: Response) => {
+router.post('/enhance-prompt', aiLimiter, async (req: Request, res: Response) => {
   try {
     const { message, targetRegion, targetAudience } = req.body;
 
@@ -81,8 +83,7 @@ IMPORTANT: Return ONLY the enhanced message text, nothing else. No explanations,
   } catch (error) {
     logger.error('Error enhancing prompt:', error);
     res.status(500).json({
-      error: 'Failed to enhance prompt',
-      details: String(error)
+      error: 'Failed to enhance prompt'
     });
   }
 });
@@ -92,7 +93,7 @@ IMPORTANT: Return ONLY the enhanced message text, nothing else. No explanations,
  * Generate campaign assets
  * Accepts multipart/form-data with 'brief' (JSON) and optional 'logo' (image file)
  */
-router.post('/generate', upload.single('logo'), async (req: Request, res: Response) => {
+router.post('/generate', generationLimiter, upload.single('logo'), async (req: Request, res: Response) => {
   try {
     logger.info('Received campaign generation request');
 
@@ -102,10 +103,26 @@ router.post('/generate', upload.single('logo'), async (req: Request, res: Respon
     // Validate campaign brief (this strips extra fields)
     const brief: CampaignBrief = validateCampaignBrief(briefData);
 
-    // If logo file was uploaded, add it AFTER validation
+    // If logo file was uploaded, validate and add it AFTER validation
     // (Zod validation strips fields not in schema)
     if (req.file) {
       logger.info(`Logo uploaded: ${req.file.originalname} (${req.file.size} bytes)`);
+
+      // Validate the uploaded file using magic number verification
+      const fileValidation = validateUploadedFile(req.file.buffer, {
+        maxSizeMB: 10,
+        allowedTypes: ['png', 'jpeg', 'webp', 'gif']
+      });
+
+      if (!fileValidation.valid) {
+        return res.status(400).json({
+          error: 'Invalid logo file',
+          details: fileValidation.error
+        });
+      }
+
+      logger.info(`Logo file validated: type=${fileValidation.type}`);
+
       if (!brief.brandAssets) {
         (brief as any).brandAssets = {};
       }
@@ -154,8 +171,7 @@ router.post('/generate', upload.single('logo'), async (req: Request, res: Respon
   } catch (error) {
     logger.error('Error starting campaign generation:', error);
     res.status(400).json({
-      error: 'Failed to start campaign generation',
-      details: String(error)
+      error: 'Failed to start campaign generation. Please check your campaign brief.'
     });
   }
 });

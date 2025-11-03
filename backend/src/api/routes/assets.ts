@@ -62,11 +62,46 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error listing all assets:', error);
     res.status(500).json({
-      error: 'Failed to list assets',
-      details: String(error)
+      error: 'Failed to list assets'
     });
   }
 });
+
+/**
+ * Validate and sanitize file path to prevent path traversal attacks
+ */
+function validateFilePath(filePath: string): { valid: boolean; error?: string } {
+  // Reject paths with null bytes
+  if (filePath.includes('\0')) {
+    return { valid: false, error: 'Invalid file path' };
+  }
+
+  // Reject paths with path traversal sequences
+  if (filePath.includes('..') || filePath.includes('./') || filePath.includes('.\\')) {
+    return { valid: false, error: 'Invalid file path' };
+  }
+
+  // Reject absolute paths (should be relative to storage)
+  if (path.isAbsolute(filePath)) {
+    return { valid: false, error: 'Invalid file path' };
+  }
+
+  // Only allow alphanumeric, hyphens, underscores, dots, and forward slashes
+  if (!/^[a-zA-Z0-9\-_./]+$/.test(filePath)) {
+    return { valid: false, error: 'Invalid file path characters' };
+  }
+
+  // Ensure the path doesn't escape the storage directory
+  const storagePath = process.env.STORAGE_PATH || './output';
+  const normalizedPath = path.normalize(path.resolve(storagePath, filePath));
+  const normalizedStorage = path.normalize(path.resolve(storagePath));
+
+  if (!normalizedPath.startsWith(normalizedStorage)) {
+    return { valid: false, error: 'Invalid file path' };
+  }
+
+  return { valid: true };
+}
 
 /**
  * GET /api/assets/file/:filePath
@@ -76,6 +111,13 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/file/*', async (req: Request, res: Response) => {
   try {
     const filePath = req.params[0];
+
+    // Validate and sanitize file path
+    const validation = validateFilePath(filePath);
+    if (!validation.valid) {
+      logger.warn(`Invalid file path attempted: ${filePath}`);
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
 
     // Check if file exists
     const exists = await cloudProvider.exists(filePath);
@@ -91,7 +133,16 @@ router.get('/file/*', async (req: Request, res: Response) => {
 
     if (useLocal) {
       const fullPath = path.join(storagePath, filePath);
-      res.sendFile(path.resolve(fullPath));
+      const resolvedPath = path.resolve(fullPath);
+      const resolvedStorage = path.resolve(storagePath);
+
+      // Double-check the resolved path is within storage (defense in depth)
+      if (!resolvedPath.startsWith(resolvedStorage)) {
+        logger.error(`Path traversal attempt blocked: ${filePath}`);
+        return res.status(400).json({ error: 'Invalid file path' });
+      }
+
+      res.sendFile(resolvedPath);
     } else {
       // For cloud storage, download and serve
       const buffer = await cloudProvider.download(filePath);
@@ -100,10 +151,7 @@ router.get('/file/*', async (req: Request, res: Response) => {
     }
   } catch (error) {
     logger.error('Error serving asset:', error);
-    res.status(404).json({
-      error: 'Asset not found',
-      details: String(error)
-    });
+    res.status(404).json({ error: 'Asset not found' });
   }
 });
 
@@ -128,8 +176,7 @@ router.get('/:campaignId', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error listing assets:', error);
     res.status(500).json({
-      error: 'Failed to list assets',
-      details: String(error)
+      error: 'Failed to list assets'
     });
   }
 });

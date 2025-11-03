@@ -16,9 +16,11 @@ const envPath = path.join(rootDir, '.env');
 // Verify the .env file exists at the expected location
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
-  console.log(`[config] Loading .env from: ${envPath}`);
+  // Using console.info here is acceptable since this runs during bootstrapping
+  // before the Winston logger is initialized
+  console.info(`[config] Loading .env from: ${envPath}`);
 } else {
-  console.warn(`[config] Warning: .env file not found at ${envPath}`);
+  console.error(`[config] Warning: .env file not found at ${envPath}`);
   dotenv.config(); // Try loading from default locations as fallback
 }
 
