@@ -219,25 +219,7 @@ export async function addTextOverlay(
     // Ensure yPosition is never negative and is an integer
     yPosition = Math.max(0, Math.floor(yPosition));
 
-    // Create SVG overlay with text wrapping
-    // Split text into words and create wrapped lines
-    const words = text.split(' ');
-    const maxCharsPerLine = Math.floor(imageWidth / (fontSize * 0.6));
-    const lines: string[] = [];
-    let currentLine = '';
-
-    for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      if (testLine.length <= maxCharsPerLine) {
-        currentLine = testLine;
-      } else {
-        if (currentLine) lines.push(currentLine);
-        currentLine = word;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-
-    // Process logo if provided
+    // Process logo first to know its dimensions for text wrapping
     let logoBuffer: Buffer | undefined;
     let logoWidth = 0;
     let logoHeight = 0;
@@ -261,20 +243,32 @@ export async function addTextOverlay(
       logger.info(`Logo resized to ${logoWidth}x${logoHeight}px`);
     }
 
-    // Calculate logo spacing
-    const logoSpacing = hasLogo ? Math.floor(fontSize * 0.8) : 0;
+    // Calculate available width for text (accounting for logo and padding)
+    const logoSpacing = hasLogo ? Math.floor(fontSize * 1.2) : 0;
+    const reservedWidthForLogo = hasLogo ? logoWidth + logoSpacing + (padding * 2) : (padding * 2);
+    const availableTextWidth = imageWidth - reservedWidthForLogo;
+
+    // Create SVG overlay with text wrapping based on available width
+    // Split text into words and create wrapped lines
+    const words = text.split(' ');
+    const maxCharsPerLine = Math.floor(availableTextWidth / (fontSize * 0.6));
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (testLine.length <= maxCharsPerLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
 
     // Calculate vertical centering for multiline text
     const totalTextHeight = lines.length * lineHeight;
     const textStartY = Math.floor(yPosition + (boxHeight - totalTextHeight) / 2 + fontSize);
-
-    // Estimate text width (rough approximation)
-    const longestLine = lines.reduce((a, b) => a.length > b.length ? a : b, '');
-    const estimatedTextWidth = longestLine.length * fontSize * 0.6;
-
-    // Calculate total content width and starting position
-    const totalContentWidth = hasLogo ? logoWidth + logoSpacing + estimatedTextWidth : estimatedTextWidth;
-    const contentStartX = Math.floor((imageWidth - totalContentWidth) / 2);
 
     // Position logo and text based on logoPosition
     let logoX = 0;
@@ -282,18 +276,31 @@ export async function addTextOverlay(
 
     if (hasLogo) {
       if (logoPosition === 'prefix') {
-        // Logo first, then text
-        logoX = Math.max(padding, contentStartX);
-        textX = logoX + logoWidth + logoSpacing + Math.floor(estimatedTextWidth / 2);
+        // Logo on left, text in remaining space
+        // Position logo at left with padding
+        logoX = padding;
+
+        // Calculate the available space for text (right of logo)
+        const textAreaStartX = logoX + logoWidth + logoSpacing;
+        const textAreaWidth = imageWidth - textAreaStartX - padding;
+
+        // Center text in the available text area
+        textX = textAreaStartX + Math.floor(textAreaWidth / 2);
       } else {
-        // Text first, then logo
-        textX = contentStartX + Math.floor(estimatedTextWidth / 2);
-        logoX = textX + Math.floor(estimatedTextWidth / 2) + logoSpacing;
+        // Text on left, logo on right
+        // Calculate available space for text (left side)
+        const textAreaWidth = imageWidth - logoWidth - logoSpacing - (padding * 2);
+
+        // Center text in left area
+        textX = padding + Math.floor(textAreaWidth / 2);
+
+        // Position logo on the right
+        logoX = imageWidth - logoWidth - padding;
       }
 
       // Ensure positions stay within bounds
       logoX = Math.max(padding, Math.min(logoX, imageWidth - logoWidth - padding));
-      textX = Math.max(Math.floor(estimatedTextWidth / 2) + padding, Math.min(textX, imageWidth - Math.floor(estimatedTextWidth / 2) - padding));
+      textX = Math.max(padding, Math.min(textX, imageWidth - padding));
     }
 
     // Create SVG with proper text wrapping
