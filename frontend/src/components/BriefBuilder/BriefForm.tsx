@@ -58,6 +58,15 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
   // Load campaign from imported brief
   useEffect(() => {
     if (loadedBrief) {
+      // Clear all existing form state first
+      setEnhancedMessage('');
+      setCopied(false);
+      setCopiedEnhanced(false);
+      setIsEnhancing(false);
+      setShowAnalyticsCode(false);
+      setShowBrandAssets(false);
+
+      // Load new campaign data
       setCampaignId(loadedBrief.campaignId);
       setTargetRegion(loadedBrief.targetRegion);
       setTargetAudience(loadedBrief.targetAudience);
