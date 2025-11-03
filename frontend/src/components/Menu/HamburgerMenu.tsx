@@ -33,14 +33,28 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
   // Save campaign to localStorage
   const saveCampaign = (brief: CampaignBrief) => {
     try {
+      // Create a serializable copy of the brief
+      const serializableBrief = { ...brief };
+
+      // Handle brandAssets logo - only save if it's already a filepath string
+      if (serializableBrief.brandAssets?.logo) {
+        if (serializableBrief.brandAssets.logo instanceof File) {
+          // Don't save File objects - they can't be serialized
+          // User should generate the campaign first to get the filepath
+          toast.error('Please generate the campaign first before saving. Logo files cannot be saved directly.');
+          return;
+        }
+        // If it's a string filepath, keep it as-is
+      }
+
       const campaigns = getSavedCampaigns();
       const existing = campaigns.findIndex(c => c.campaignId === brief.campaignId);
 
       if (existing >= 0) {
-        campaigns[existing] = brief;
+        campaigns[existing] = serializableBrief;
         toast.success(t('toast.campaignUpdated'));
       } else {
-        campaigns.push(brief);
+        campaigns.push(serializableBrief);
         toast.success(t('toast.campaignSaved'));
       }
 
@@ -72,6 +86,17 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
     } catch (error) {
       console.error('Error deleting campaign:', error);
       toast.error(t('toast.campaignDeleted'));
+    }
+  };
+
+  // Clear all saved campaigns from localStorage
+  const clearAllCampaigns = () => {
+    try {
+      localStorage.removeItem('savedCampaigns');
+      toast.success('All saved campaigns cleared');
+    } catch (error) {
+      console.error('Error clearing campaigns:', error);
+      toast.error('Failed to clear campaigns');
     }
   };
 
@@ -350,12 +375,27 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ currentBrief, onLo
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">{t('saved.title')}</h3>
-                <button
-                  onClick={() => setShowSavedCampaigns(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-3">
+                  {savedCampaigns.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to clear ALL saved campaigns? This cannot be undone.')) {
+                          clearAllCampaigns();
+                          setShowSavedCampaigns(false);
+                        }
+                      }}
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowSavedCampaigns(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
 
               {savedCampaigns.length === 0 ? (
