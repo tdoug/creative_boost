@@ -77,7 +77,7 @@ export const AssetGrid: React.FC<AssetGridProps> = ({ assets, brandAssets }) => 
       toast.loading(t('toast.checkingCompliance'), { id: 'compliance' });
 
       const result = await complianceApi.checkBrandCompliance(asset.path, {
-        logo: brandAssets.logo,
+        logo: typeof brandAssets.logo === 'string' ? brandAssets.logo : undefined,
         primaryColor: brandAssets.primaryColor,
         secondaryColor: brandAssets.secondaryColor
       });

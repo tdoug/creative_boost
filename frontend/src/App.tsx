@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BriefForm } from './components/BriefBuilder/BriefForm';
 import { GenerationProgress } from './components/Dashboard/GenerationProgress';
@@ -19,7 +19,6 @@ function App() {
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
   const [currentBrief, setCurrentBrief] = useState<CampaignBrief | null>(null);
   const [loadedBrief, setLoadedBrief] = useState<CampaignBrief | null>(null);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   // Load all existing assets on mount
@@ -30,8 +29,6 @@ function App() {
         setAssets(existingAssets);
       } catch (error) {
         console.error('Error loading existing assets:', error);
-      } finally {
-        setIsLoadingAssets(false);
       }
     };
 

@@ -33,6 +33,15 @@ router.post('/check', aiLimiter, async (req: Request, res: Response) => {
 
     logger.info(`Checking brand compliance for image: ${imagePath}`);
 
+    // Check if the cloud provider supports image analysis
+    if (!cloudProvider.analyzeImage) {
+      logger.error('Brand compliance check not supported: Cloud provider does not implement analyzeImage');
+      return res.status(501).json({
+        error: 'Brand compliance checking is not supported with the current cloud provider',
+        details: 'Image analysis requires a cloud provider with vision capabilities (e.g., AWS Bedrock with Claude)'
+      });
+    }
+
     // Download the image
     const imageBuffer = await cloudProvider.download(imagePath);
 

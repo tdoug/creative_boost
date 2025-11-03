@@ -146,7 +146,7 @@ export async function generateCampaignReport(
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
 
-    eventsWithPrompts.forEach((event, index) => {
+    eventsWithPrompts.forEach((event) => {
       checkPageBreak(25);
       if (event.prompt) {
         doc.setFont('helvetica', 'bold');

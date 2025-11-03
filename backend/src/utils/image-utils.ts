@@ -142,7 +142,7 @@ export async function addTextOverlay(
     const {
       text,
       fontSize = 48,
-      padding = 20,
+      padding = 60,
       position = selectedPosition,
       logo,
       logoPosition = 'prefix',

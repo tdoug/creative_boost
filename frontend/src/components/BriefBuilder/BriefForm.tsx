@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Info, Copy, Check, Sparkles, ChevronDown, ChevronRight, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Info, Copy, Check, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import { CampaignBrief, Product, BrandAssets } from '../../types';
 import toast from 'react-hot-toast';
-import { campaignApi, API_BASE_URL } from '../../services/api';
+import { campaignApi } from '../../services/api';
 
 interface BriefFormProps {
   onSubmit: (brief: CampaignBrief) => void;
@@ -30,8 +30,8 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
   const [enhancedMessage, setEnhancedMessage] = useState<string>('');
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [brandAssets, setBrandAssets] = useState<BrandAssets>({});
-  const [logoPreview, setLogoPreview] = useState<string>('');
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  // const [logoPreview, setLogoPreview] = useState<string>('');
+  // const logoInputRef = useRef<HTMLInputElement>(null);
 
   const artStyles = [
     { value: 'photorealistic', label: 'Photorealistic' },
@@ -75,15 +75,15 @@ export const BriefForm: React.FC<BriefFormProps> = ({ onSubmit, isGenerating, lo
       }
 
       // Handle logo preview if it's a string path
-      if (loadedBrief.brandAssets?.logo && typeof loadedBrief.brandAssets.logo === 'string') {
-        // If it's a relative path, construct the full URL
-        const logoPath = loadedBrief.brandAssets.logo;
-        if (logoPath.startsWith('logos/')) {
-          setLogoPreview(`${API_BASE_URL}/api/assets/file/${logoPath}`);
-        } else {
-          setLogoPreview(logoPath);
-        }
-      }
+      // if (loadedBrief.brandAssets?.logo && typeof loadedBrief.brandAssets.logo === 'string') {
+      //   // If it's a relative path, construct the full URL
+      //   const logoPath = loadedBrief.brandAssets.logo;
+      //   if (logoPath.startsWith('logos/')) {
+      //     setLogoPreview(`${API_BASE_URL}/api/assets/file/${logoPath}`);
+      //   } else {
+      //     setLogoPreview(logoPath);
+      //   }
+      // }
 
       toast.success(t('toast.campaignLoaded'));
       onBriefLoaded?.();
@@ -185,41 +185,42 @@ ${hotjarTrackingCode}`;
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Commented out unused logo upload functionality
+  // const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
+  //   // Validate file type
+  //   if (!file.type.startsWith('image/')) {
+  //     toast.error('Please upload an image file');
+  //     return;
+  //   }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Logo file size must be less than 5MB');
-      return;
-    }
+  //   // Validate file size (max 5MB)
+  //   if (file.size > 5 * 1024 * 1024) {
+  //     toast.error('Logo file size must be less than 5MB');
+  //     return;
+  //   }
 
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setLogoPreview(previewUrl);
+  //   // Create preview URL
+  //   const previewUrl = URL.createObjectURL(file);
+  //   setLogoPreview(previewUrl);
 
-    // Update brand assets
-    setBrandAssets(prev => ({ ...prev, logo: file }));
-    toast.success('Logo uploaded successfully!');
-  };
+  //   // Update brand assets
+  //   setBrandAssets(prev => ({ ...prev, logo: file }));
+  //   toast.success('Logo uploaded successfully!');
+  // };
 
-  const removeLogo = () => {
-    setLogoPreview('');
-    setBrandAssets(prev => {
-      const { logo, ...rest } = prev;
-      return rest;
-    });
-    if (logoInputRef.current) {
-      logoInputRef.current.value = '';
-    }
-  };
+  // const removeLogo = () => {
+  //   setLogoPreview('');
+  //   setBrandAssets(prev => {
+  //     const { logo, ...rest } = prev;
+  //     return rest;
+  //   });
+  //   if (logoInputRef.current) {
+  //     logoInputRef.current.value = '';
+  //   }
+  // };
 
   const handleColorChange = (field: 'primaryColor' | 'secondaryColor', value: string) => {
     setBrandAssets(prev => ({ ...prev, [field]: value }));
