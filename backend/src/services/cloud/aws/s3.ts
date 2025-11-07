@@ -11,14 +11,15 @@ export class S3StorageService {
 
   constructor(region: string, bucket: string) {
     this.bucket = bucket;
-    this.useLocal = !bucket; // Use local storage if bucket is empty/blank
+    // Use local storage if bucket is empty/blank or explicitly set to "local"
+    this.useLocal = !bucket || bucket === '' || bucket.toLowerCase() === 'local';
     this.localPath = process.env.STORAGE_PATH || './output';
 
     if (this.useLocal) {
       logger.info(`Storage service initialized (LOCAL mode: ${this.localPath})`);
     } else {
       this.client = new S3Client({ region });
-      logger.info(`S3 storage service initialized (bucket: ${bucket})`);
+      logger.info(`S3 storage service initialized (bucket: ${bucket}, region: ${region})`);
     }
   }
 
